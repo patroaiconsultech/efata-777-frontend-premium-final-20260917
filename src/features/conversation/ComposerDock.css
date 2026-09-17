@@ -1,0 +1,52 @@
+.efata-composer-dock {
+  width: min(100%, var(--efata-reading-width));
+  min-width: 0;
+  margin-inline: auto;
+  padding: 10px;
+  border: 1px solid var(--efata-border);
+  border-radius: var(--efata-radius-lg);
+  background: var(--efata-surface-2);
+  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.28);
+}
+
+.efata-message-list {
+  width: min(100%, var(--efata-reading-width));
+  min-width: 0;
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.efata-message {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  border: 1px solid var(--efata-border);
+  border-radius: var(--efata-radius-md);
+}
+
+.efata-message--assistant {
+  width: 100%;
+  padding: 16px 18px;
+  background: var(--efata-surface-soft);
+}
+
+.efata-message--user {
+  width: auto;
+  max-width: min(680px, 84%);
+  margin-left: auto;
+  padding: 13px 16px;
+  border-color: var(--efata-border-active);
+  background: rgba(25, 58, 78, 0.72);
+}
+
+.efata-message pre,
+.efata-message table {
+  max-width: 100%;
+}
+
+.efata-message pre {
+  overflow-x: auto;
+}

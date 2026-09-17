@@ -1,0 +1,105 @@
+
+.admin-shell{min-height:100vh;padding:clamp(24px,5vw,64px);background:#020706;color:#f4f8f5}.admin-shell header{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;max-width:1200px;margin:0 auto 30px}.admin-shell header span,.admin-grid span{color:#d7b55d;font-size:11px;letter-spacing:.15em}.admin-shell h1{font-size:clamp(40px,6vw,72px);margin:8px 0}.admin-shell a{color:#8ee9cf}.admin-grid{max-width:1200px;margin:auto;display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.admin-grid article{padding:24px;border:1px solid rgba(64,231,188,.14);border-radius:20px;background:rgba(6,20,16,.8)}.admin-grid strong{display:block;font-size:46px;margin-top:16px;color:#ffe198}.admin-grid .wide{grid-column:1/-1}.admin-grid p{color:#a8bbb3;line-height:1.6}@media(max-width:760px){.admin-grid{grid-template-columns:1fr 1fr}} 
+
+
+.admin-section {
+  margin-top: 28px;
+  padding: 24px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 22px;
+  background: rgba(6,20,16,.72);
+}
+.admin-section__heading {
+  display:flex;
+  justify-content:space-between;
+  gap:18px;
+  align-items:flex-end;
+  margin-bottom:18px;
+}
+.admin-section__heading span,
+.admin-governance-note > span {
+  color:#d8b85f;
+  font-size:11px;
+  letter-spacing:.16em;
+}
+.admin-section__heading h2,
+.admin-governance-note h2 {
+  margin:6px 0 0;
+}
+.admin-section__heading small {
+  color:rgba(235,242,238,.55);
+}
+.admin-agent-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:12px;
+}
+.admin-agent-card {
+  padding:16px;
+  border:1px solid rgba(52,231,193,.13);
+  border-radius:16px;
+  background:rgba(255,255,255,.025);
+}
+.admin-agent-card__top {
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+}
+.admin-agent-card__top span {
+  color:#7fe7cf;
+  font-size:10px;
+  text-transform:uppercase;
+}
+.admin-agent-card p {
+  color:rgba(235,242,238,.75);
+  margin:8px 0;
+}
+.admin-agent-card small {
+  color:rgba(235,242,238,.45);
+}
+.admin-value {
+  font-size:18px !important;
+  overflow-wrap:anywhere;
+}
+
+
+.python-runtime-card {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid rgba(55, 197, 255, 0.18);
+  border-radius: 14px;
+  background: rgba(11, 15, 20, 0.72);
+}
+.python-runtime-card > div:first-child {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.python-runtime-card dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+.python-runtime-card dl div {
+  display: grid;
+  gap: 4px;
+}
+.python-runtime-card dt {
+  opacity: 0.7;
+  font-size: 0.8rem;
+}
+.python-runtime-card dd {
+  margin: 0;
+}
+.python-runtime-card button[disabled] {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+@media (max-width: 720px) {
+  .python-runtime-card dl {
+    grid-template-columns: 1fr;
+  }
+}

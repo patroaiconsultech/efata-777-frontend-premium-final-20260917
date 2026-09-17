@@ -1,0 +1,26 @@
+{
+  "backend_candidate_sha256": "1cab5f2152ffe50369ec62832b9e6ddeceb0eb0866b4e58fef0b11f37d6c775c",
+  "openapi_sha256": "db3bbba620efab83b0690017d777155feb8f95cfb4e81270180e1b92b181b558",
+  "openapi_paths": 88,
+  "capabilities": {
+    "method": "GET",
+    "path": "/api/v2/document-intake/capabilities"
+  },
+  "paste": {
+    "method": "POST",
+    "path": "/api/v2/threads/{thread_id}/document-intake/paste",
+    "content": {
+      "required": true,
+      "minLength": 1,
+      "maxLength": 5000000
+    },
+    "title": {
+      "required": false,
+      "maxLength": 240
+    }
+  },
+  "scope": {
+    "large_paste": "canonical_markdown_selective_context",
+    "traditional_upload": "distinct_path"
+  }
+}

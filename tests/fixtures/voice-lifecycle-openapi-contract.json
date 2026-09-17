@@ -1,0 +1,31 @@
+{
+  "source": "physical_backend_openapi_r3_audited_by_ao01",
+  "validation": {
+    "method": "POST",
+    "path": "/api/v2/admin/agent-voice-assignments/{assignment_id}/validation",
+    "required": [
+      "validation_status",
+      "evidence_ref"
+    ],
+    "validation_status_enum": [
+      "VALIDATED",
+      "FAILED"
+    ],
+    "evidence_ref": {
+      "minLength": 8,
+      "maxLength": 500
+    }
+  },
+  "activation": {
+    "method": "POST",
+    "path": "/api/v2/admin/agent-voice-assignments/{assignment_id}/activation",
+    "required": [
+      "evidence_ref"
+    ],
+    "evidence_ref": {
+      "minLength": 8,
+      "maxLength": 500
+    }
+  },
+  "evidence_binding_note": "OpenAPI physical contract audited by AO-01; openapi_sha256 was not supplied in the audit text, so no cryptographic OpenAPI digest is invented."
+}

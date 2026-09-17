@@ -1,0 +1,250 @@
+diff --git a/src/utils/chronology.ts b/src/utils/chronology.ts
+--- a/src/utils/chronology.ts
++++ b/src/utils/chronology.ts
+@@ -8,6 +8,12 @@ const shortDateFormatter = new Intl.DateTimeFormat(undefined, {
+   month: "short",
+ });
+
++const chatDateFormatter = new Intl.DateTimeFormat(undefined, {
++  day: "2-digit",
++  month: "long",
++  year: "numeric",
++});
++
+ const fullDateFormatter = new Intl.DateTimeFormat(undefined, {
+   dateStyle: "medium",
+   timeStyle: "short",
+@@ -24,6 +30,31 @@ export function formatMessageTimestamp(value: string): string {
+   return date ? timeFormatter.format(date) : "Horário indisponível";
+ }
+
++export function isSameChatDay(left: string, right: string): boolean {
++  const leftDate = parseTimestamp(left);
++  const rightDate = parseTimestamp(right);
++  if (!leftDate || !rightDate) return false;
++  return dayKey(leftDate) === dayKey(rightDate);
++}
++
++export function formatChatDateSeparator(
++  value: string,
++  now = new Date(),
++): string {
++  const date = parseTimestamp(value);
++  if (!date) return "Data indisponível";
++  if (dayKey(date) === dayKey(now)) return "Hoje";
++
++  const yesterday = new Date(now);
++  yesterday.setDate(now.getDate() - 1);
++  if (dayKey(date) === dayKey(yesterday)) return "Ontem";
++
++  return chatDateFormatter.format(date);
++}
++
+ export function formatConversationTimestamp(
+   value: string,
+   now = new Date(),
+diff --git a/src/routes/AppConsole.tsx b/src/routes/AppConsole.tsx
+--- a/src/routes/AppConsole.tsx
++++ b/src/routes/AppConsole.tsx
+@@ -33,9 +33,11 @@ import ArtifactCard from "../components/ArtifactCard";
+ import PwaInstallButton from "../components/PwaInstallButton";
+ import { beginLogin, isOidcConfigured, logout } from "../auth/oidc";
+ import {
++  formatChatDateSeparator,
+   formatConversationTimestamp,
+   formatDateTimeTitle,
+   formatMessageTimestamp,
++  isSameChatDay,
+ } from "../utils/chronology";
+ const AGENT = "Josué";
+@@ -1486,48 +1488,67 @@ export default function AppConsole() {
+               <p>Onde a inteligência encontra harmonia.</p>
+             </article>
+           ) : (
+-            messages.map((item) => (
+-              <article
+-                key={item.id}
+-                className={item.author_type === "agent" ? "message agent" : "message user"}
+-              >
+-                <header className="message__meta">
+-                  <span className="message__author">
+-                    {item.author_type === "agent" ? item.agent_name || AGENT : "Você"}
+-                  </span>
++            messages.map((item, index) => {
++              const previous = index > 0 ? messages[index - 1] : null;
++              const showDateSeparator =
++                !previous || !isSameChatDay(previous.created_at, item.created_at);
++              return (
++                <React.Fragment key={item.id}>
++                  {showDateSeparator ? (
++                    <div
++                      className="thread-date-separator"
++                      role="separator"
++                      aria-label={`Mensagens de ${formatChatDateSeparator(item.created_at)}`}
++                    >
++                      <time
++                        dateTime={item.created_at}
++                        title={formatDateTimeTitle(item.created_at)}
++                      >
++                        {formatChatDateSeparator(item.created_at)}
++                      </time>
++                    </div>
++                  ) : null}
++                  <article
++                    className={
++                      item.author_type === "agent" ? "message agent" : "message user"
++                    }
++                  >
++                    <header className="message__meta">
++                      <span className="message__author">
++                        {item.author_type === "agent" ? item.agent_name || AGENT : "Você"}
++                      </span>
++                      <time
++                        dateTime={item.created_at}
++                        title={formatDateTimeTitle(item.created_at)}
++                      >
++                        {formatMessageTimestamp(item.created_at)}
++                      </time>
++                    </header>
++                    <p>{item.content}</p>
++                    {item.author_type === "agent" ? (
++                      <footer className="message__actions">
++                        <button
++                          type="button"
++                          className={
++                            speakingMessageId === item.id
++                              ? "speaker-button speaker-button--playing"
++                              : "speaker-button"
++                          }
++                          onClick={() => void handleMessageVoice(item.id)}
++                          aria-pressed={speakingMessageId === item.id}
++                          title={
++                            speakingMessageId === item.id
++                              ? "Parar reprodução"
++                              : "Ouvir resposta com a voz canônica deste agente"
++                          }
++                        >
++                          <span aria-hidden="true">🔊</span>
++                          <span>
++                            {speakingMessageId === item.id ? "Parar" : "Ouvir"}
++                          </span>
++                        </button>
++                      </footer>
++                    ) : null}
++                  </article>
++                </React.Fragment>
++              );
++            })
+-                  <time
+-                    dateTime={item.created_at}
+-                    title={formatDateTimeTitle(item.created_at)}
+-                  >
+-                    {formatMessageTimestamp(item.created_at)}
+-                  </time>
+-                </header>
+-                <p>{item.content}</p>
+-                {item.author_type === "agent" ? (
+-                  <footer className="message__actions">
+-                    <button
+-                      type="button"
+-                      className={
+-                        speakingMessageId === item.id
+-                          ? "speaker-button speaker-button--playing"
+-                          : "speaker-button"
+-                      }
+-                      onClick={() => void handleMessageVoice(item.id)}
+-                      aria-pressed={speakingMessageId === item.id}
+-                      title={
+-                        speakingMessageId === item.id
+-                          ? "Parar reprodução"
+-                          : "Ouvir resposta com a voz canônica deste agente"
+-                      }
+-                    >
+-                      <span aria-hidden="true">🔊</span>
+-                      <span>
+-                        {speakingMessageId === item.id ? "Parar" : "Ouvir"}
+-                      </span>
+-                    </button>
+-                  </footer>
+-                ) : null}
+-              </article>
+-            ))
+           )}
+diff --git a/src/styles.css b/src/styles.css
+--- a/src/styles.css
++++ b/src/styles.css
+@@ -1146,6 +1146,35 @@
+   overflow-y: auto;
+   scroll-behavior: smooth;
+ }
++
++.thread-date-separator {
++  display: flex;
++  width: min(720px, 86%);
++  align-self: center;
++  align-items: center;
++  gap: 12px;
++  color: #7890a5;
++  font-size: 0.72rem;
++  letter-spacing: 0.03em;
++}
++
++.thread-date-separator::before,
++.thread-date-separator::after {
++  height: 1px;
++  flex: 1;
++  content: "";
++  background: rgba(104, 159, 198, 0.16);
++}
++
++.thread-date-separator time {
++  flex: 0 0 auto;
++  padding: 4px 10px;
++  border: 1px solid rgba(104, 159, 198, 0.16);
++  border-radius: 999px;
++  background: rgba(11, 15, 20, 0.46);
++  font-variant-numeric: tabular-nums;
++}
++
+ .thread-state {
+   display: inline-flex;
+   align-self: center;
+diff --git a/tests/chat-chronology.test.mjs b/tests/chat-chronology.test.mjs
+new file mode 100644
+--- /dev/null
++++ b/tests/chat-chronology.test.mjs
+@@ -0,0 +1,34 @@
++import test from "node:test";
++import assert from "node:assert/strict";
++import fs from "node:fs";
++
++const console_ = fs.readFileSync("src/routes/AppConsole.tsx", "utf8");
++const chronology = fs.readFileSync("src/utils/chronology.ts", "utf8");
++const styles = fs.readFileSync("src/styles.css", "utf8");
++
++test("chat chronology exposes local-day comparison and visible day labels", () => {
++  assert.match(chronology, /export function isSameChatDay/);
++  assert.match(chronology, /export function formatChatDateSeparator/);
++  assert.match(chronology, /return "Hoje"/);
++  assert.match(chronology, /return "Ontem"/);
++});
++
++test("chat timeline inserts a date separator only when local calendar day changes", () => {
++  assert.match(console_, /formatChatDateSeparator/);
++  assert.match(console_, /isSameChatDay/);
++  assert.match(console_, /className="thread-date-separator"/);
++  assert.match(console_, /role="separator"/);
++  assert.match(console_, /messages\[index - 1\]/);
++});
++
++test("per-message time remains visible after date separators are added", () => {
++  assert.match(console_, /formatMessageTimestamp\(item\.created_at\)/);
++  assert.match(console_, /title=\{formatDateTimeTitle\(item\.created_at\)\}/);
++});
++
++test("chat date separator has dedicated accessible visual styling", () => {
++  assert.match(styles, /\.thread-date-separator/);
++  assert.match(styles, /\.thread-date-separator::before/);
++  assert.match(styles, /\.thread-date-separator::after/);
++  assert.match(styles, /\.thread-date-separator time/);
++});

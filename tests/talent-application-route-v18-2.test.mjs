@@ -1,0 +1,5 @@
+import test from "node:test";import assert from "node:assert/strict";import fs from "node:fs";const read=p=>fs.readFileSync(p,"utf8");
+test("career CTAs open a dedicated application route",()=>{const m=read("src/landing/premiumMarkup.ts");assert.match(m,/\/talentos\/candidatura\?type=consultant/);assert.doesNotMatch(m,/id="talentos-formulario"/)});
+test("router exposes dedicated talent application page",()=>{const a=read("src/App.tsx");assert.match(a,/TalentApplication/);assert.match(a,/path="\/talentos\/candidatura"/)});
+test("phone is normalized with explicit country selector",()=>{const s=read("src/routes/TalentApplication.tsx");assert.match(s,/COUNTRIES/);assert.match(s,/normalizeE164/);assert.match(s,/payload\.set\("phone"/);assert.match(s,/phone_country_code/);assert.match(s,/phone_national/)});
+test("application page preserves draft and keeps mobile fields isolated from landing handlers",()=>{const s=read("src/routes/TalentApplication.tsx");assert.match(s,/sessionStorage\.setItem/);assert.match(s,/sessionStorage\.removeItem/);assert.match(s,/autoComplete="off"/)});

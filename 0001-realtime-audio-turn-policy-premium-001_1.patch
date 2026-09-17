@@ -1,0 +1,235 @@
+diff --git a/src/routes/AppConsole.tsx b/src/routes/AppConsole.tsx
+--- a/src/routes/AppConsole.tsx
++++ b/src/routes/AppConsole.tsx
+@@ -213,10 +213,13 @@ export default function AppConsole() {
+   const realtimeSessionIdRef = useRef("");
+   const realtimeSessionThreadRef = useRef("");
+   const realtimeSeenFinalIdsRef = useRef<Set<string>>(new Set());
+   const realtimeTurnChainRef = useRef<Promise<void>>(Promise.resolve());
++  const realtimeUserSpeakingRef = useRef(false);
++  const realtimeSpeechEpochRef = useRef(0);
+   const messageAudioRef = useRef<HTMLAudioElement | null>(null);
+   const messageAudioUrlRef = useRef("");
+   const messageVoiceAbortRef = useRef<AbortController | null>(null);
++  const messageAudioDoneRef = useRef<(() => void) | null>(null);
+   const configured = isApiBaseConfigured();
+   const authConfigured = isOidcConfigured();
+@@ -603,6 +606,8 @@ export default function AppConsole() {
+     void startVoiceRecording();
+   }
+   function stopMessageAudio() {
++    const playbackDone = messageAudioDoneRef.current;
++    messageAudioDoneRef.current = null;
+     messageVoiceAbortRef.current?.abort();
+     messageVoiceAbortRef.current = null;
+     const audio = messageAudioRef.current;
+@@ -616,6 +621,7 @@ export default function AppConsole() {
+       messageAudioUrlRef.current = "";
+     }
+     setSpeakingMessageId("");
++    playbackDone?.();
+   }
+   async function playCanonicalMessageVoice(
+     messageId: string,
+@@ -644,6 +650,12 @@ export default function AppConsole() {
+       messageAudioUrlRef.current = objectUrl;
+       const audio = new Audio(objectUrl);
+       messageAudioRef.current = audio;
++      const playbackDone = fromRealtime
++        ? new Promise<void>((resolve) => {
++            messageAudioDoneRef.current = resolve;
++          })
++        : null;
+       audio.onended = () => {
+         if (messageAudioRef.current === audio) {
+           stopMessageAudio();
+@@ -661,6 +673,7 @@ export default function AppConsole() {
+         }
+       };
+       await audio.play();
++      if (playbackDone) await playbackDone;
+     } catch (err) {
+       if (!controller.signal.aborted) setError(describe(err));
+       stopMessageAudio();
+@@ -683,6 +696,9 @@ export default function AppConsole() {
+     await playCanonicalMessageVoice(messageId);
+   }
+   function stopRealtimeSession() {
++    realtimeUserSpeakingRef.current = false;
++    realtimeSpeechEpochRef.current += 1;
++    stopMessageAudio();
+     realtimeChannelRef.current?.close();
+     realtimeChannelRef.current = null;
+     realtimePeerRef.current?.close();
+@@ -719,6 +735,7 @@ export default function AppConsole() {
+     transcript: string,
+     sessionId: string,
+     sessionThreadId: string,
++    transcriptSpeechEpoch: number,
+   ) {
+     if (
+       !sessionId ||
+@@ -744,6 +761,13 @@ export default function AppConsole() {
+         return;
+       }
+       await refreshMessages();
++      if (
++        realtimeUserSpeakingRef.current ||
++        realtimeSpeechEpochRef.current !== transcriptSpeechEpoch
++      ) {
++        setRealtimeState("listening");
++        return;
++      }
+       await playCanonicalMessageVoice(result.message_id, true);
+     } catch (err) {
+       if (
+@@ -758,13 +782,26 @@ export default function AppConsole() {
+   }
+   function handleRealtimeProviderEvent(raw: unknown) {
+     if (!raw || typeof raw !== "object") return;
+     const event = raw as Record<string, unknown>;
+-    if (
+-      String(event.type || "") !==
+-      "conversation.item.input_audio_transcription.completed"
+-    ) {
++    const eventType = String(event.type || "");
++    if (eventType === "input_audio_buffer.speech_started") {
++      realtimeUserSpeakingRef.current = true;
++      realtimeSpeechEpochRef.current += 1;
++      if (messageAudioRef.current || messageVoiceAbortRef.current) {
++        stopMessageAudio();
++      }
++      if (realtimeSessionIdRef.current) setRealtimeState("listening");
++      return;
++    }
++    if (eventType === "input_audio_buffer.speech_stopped") {
++      realtimeUserSpeakingRef.current = false;
++      if (realtimeSessionIdRef.current) setRealtimeState("transcribing");
++      return;
++    }
++    if (eventType !== "conversation.item.input_audio_transcription.completed") {
+       return;
+     }
+     const eventId = String(event.event_id || "");
+@@ -774,6 +811,7 @@ export default function AppConsole() {
+     realtimeSeenFinalIdsRef.current.add(dedupeId);
+     const sessionId = realtimeSessionIdRef.current;
+     const sessionThreadId = realtimeSessionThreadRef.current;
++    const transcriptSpeechEpoch = realtimeSpeechEpochRef.current;
+     setRealtimeState("transcribing");
+     realtimeTurnChainRef.current = realtimeTurnChainRef.current
+       .then(() =>
+@@ -783,6 +821,7 @@ export default function AppConsole() {
+           transcript,
+           sessionId,
+           sessionThreadId,
++          transcriptSpeechEpoch,
+         ),
+       )
+       .catch(() => undefined);
+diff --git a/tests/realtime-turntaking-policy.test.mjs b/tests/realtime-turntaking-policy.test.mjs
+new file mode 100644
+--- /dev/null
++++ b/tests/realtime-turntaking-policy.test.mjs
+@@ -0,0 +1,101 @@
++import test from "node:test";
++import assert from "node:assert/strict";
++import fs from "node:fs";
++
++const console_ = fs.readFileSync("src/routes/AppConsole.tsx", "utf8");
++
++test("realtime consumes provider speech lifecycle events explicitly", () => {
++  assert.match(console_, /input_audio_buffer\.speech_started/);
++  assert.match(console_, /input_audio_buffer\.speech_stopped/);
++  assert.match(console_, /realtimeUserSpeakingRef\.current = true/);
++  assert.match(console_, /realtimeUserSpeakingRef\.current = false/);
++});
++
++test("speech_started advances the monotonic realtime speech epoch", () => {
++  const start = console_.indexOf("function handleRealtimeProviderEvent");
++  const end = console_.indexOf("async function startRealtimeSession", start);
++  const block = console_.slice(start, end);
++
++  assert.match(block, /realtimeSpeechEpochRef\.current \+= 1/);
++});
++
++test("explicit user speech can barge in and stop only active canonical playback", () => {
++  const start = console_.indexOf("function handleRealtimeProviderEvent");
++  const end = console_.indexOf("async function startRealtimeSession", start);
++  const block = console_.slice(start, end);
++
++  assert.match(block, /messageAudioRef\.current \|\| messageVoiceAbortRef\.current/);
++  assert.match(block, /stopMessageAudio\(\)/);
++});
++
++test("realtime turn chain waits for actual audio completion instead of audio start", () => {
++  const start = console_.indexOf("async function playCanonicalMessageVoice");
++  const end = console_.indexOf("async function handleMessageVoice", start);
++  const block = console_.slice(start, end);
++
++  assert.match(block, /messageAudioDoneRef/);
++  assert.match(block, /new Promise<void>/);
++  assert.match(block, /await audio\.play\(\)/);
++  assert.match(block, /await playbackDone/);
++
++  assert.ok(
++    block.indexOf("await audio.play()") < block.indexOf("await playbackDone"),
++    "playback lifetime must remain pending after audio.play() starts",
++  );
++});
++
++test("stopping playback releases the realtime playback waiter", () => {
++  const start = console_.indexOf("function stopMessageAudio");
++  const end = console_.indexOf("async function playCanonicalMessageVoice", start);
++  const block = console_.slice(start, end);
++
++  assert.match(block, /const playbackDone = messageAudioDoneRef\.current/);
++  assert.match(block, /messageAudioDoneRef\.current = null/);
++  assert.match(block, /playbackDone\?\.\(\)/);
++});
++
++test("final transcript captures speech epoch before entering the turn chain", () => {
++  const start = console_.indexOf("function handleRealtimeProviderEvent");
++  const end = console_.indexOf("async function startRealtimeSession", start);
++  const block = console_.slice(start, end);
++
++  assert.match(block, /const transcriptSpeechEpoch = realtimeSpeechEpochRef\.current/);
++  assert.match(block, /transcriptSpeechEpoch,/);
++});
++
++test("stale response after a newer speech start and stop cannot play TTS", () => {
++  const start = console_.indexOf("async function processRealtimeFinal");
++  const end = console_.indexOf("function handleRealtimeProviderEvent", start);
++  const block = console_.slice(start, end);
++
++  assert.match(block, /transcriptSpeechEpoch: number/);
++  assert.match(block, /realtimeSpeechEpochRef\.current !== transcriptSpeechEpoch/);
++  assert.ok(
++    block.indexOf("realtimeSpeechEpochRef.current !== transcriptSpeechEpoch") <
++      block.indexOf("playCanonicalMessageVoice"),
++    "speech epoch freshness guard must execute before canonical TTS playback",
++  );
++});
++
++test("currently speaking remains an immediate stale playback guard", () => {
++  const start = console_.indexOf("async function processRealtimeFinal");
++  const end = console_.indexOf("function handleRealtimeProviderEvent", start);
++  const block = console_.slice(start, end);
++
++  assert.match(block, /realtimeUserSpeakingRef\.current/);
++  assert.ok(
++    block.indexOf("realtimeUserSpeakingRef.current") <
++      block.indexOf("playCanonicalMessageVoice"),
++    "currently-speaking guard must execute before canonical TTS playback",
++  );
++});
++
++test("ending a realtime session invalidates speech generation and active playback", () => {
++  const start = console_.indexOf("function stopRealtimeSession");
++  const end = console_.indexOf("function waitForIceGatheringComplete", start);
++  const block = console_.slice(start, end);
++
++  assert.match(block, /realtimeUserSpeakingRef\.current = false/);
++  assert.match(block, /realtimeSpeechEpochRef\.current \+= 1/);
++  assert.match(block, /stopMessageAudio\(\)/);
++});

@@ -1,0 +1,22 @@
+{
+  "incident": "FRONTEND-V15-PUBLIC-ACCESS-BOOTSTRAP",
+  "scope": "single-file hotfix",
+  "file": "src/routes/AccessPortal.tsx",
+  "candidate_sha256": "06b55de78ba8a937bb48abce6a1b652c1974c20187e1f4766278affecaf59509",
+  "v15_contract": {
+    "PLATFORM_NATIVE_BOOTSTRAP_SECRET_absent": true,
+    "Primeira_conta_absent": true,
+    "public_technical_copy_absent": true,
+    "bootstrap_mode_absent": true
+  },
+  "preserved": [
+    "login",
+    "password recovery",
+    "account recovery",
+    "MFA",
+    "safe invite return path",
+    "registration by access code"
+  ],
+  "landing_touched": false,
+  "backend_touched": false
+}

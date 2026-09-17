@@ -1,0 +1,6 @@
+* @patroaiconsultech/orkio-reviewers
+/.github/workflows/ @patroaiconsultech/orkio-security
+/public/sw.js @patroaiconsultech/orkio-security
+/scripts/ @patroaiconsultech/orkio-security
+/package.json @patroaiconsultech/orkio-security
+/package-lock.json @patroaiconsultech/orkio-security

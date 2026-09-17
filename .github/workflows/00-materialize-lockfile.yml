@@ -1,0 +1,58 @@
+name: Materialize reviewed npm lockfile
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lockfile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "20.20.2"
+          cache: "none"
+          registry-url: "https://registry.npmjs.org/"
+
+      - name: Verify exact toolchain
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test "$(node --version)" = "v20.20.2"
+          test "$(npm --version)" = "10.8.2"
+          test "$(npm config get registry)" = "https://registry.npmjs.org/"
+
+      - name: Materialize lockfile once
+        shell: bash
+        run: scripts/materialize-lockfile.sh
+
+      - name: Prove clean install and build
+        shell: bash
+        run: scripts/verify-and-build.sh
+
+      - name: Preserve materialization evidence
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p lockfile-evidence
+          cp package-lock.json LOCKFILE_SHA256SUMS.txt lockfile-evidence/
+          cp -R build-evidence lockfile-evidence/
+          node --version > lockfile-evidence/node-version.txt
+          npm --version > lockfile-evidence/npm-version.txt
+          npm config get registry > lockfile-evidence/npm-registry.txt
+          find dist -type f -print0 | sort -z | xargs -0 sha256sum             > lockfile-evidence/dist-files.sha256
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: orkio-frontend-alpha2-2-lockfile-review
+          path: lockfile-evidence/
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0

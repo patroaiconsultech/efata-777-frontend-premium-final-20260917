@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /app
+Disallow: /access
+Disallow: /admin
+Disallow: /auth/
+Disallow: /invite/
+Sitemap: https://plataforma-efata-777-frontend-production.up.railway.app/sitemap.xml

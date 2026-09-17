@@ -1,0 +1,45 @@
+/* FE-P01A: geometry invariants. No backend/identity transport semantics here. */
+.efata-premium-shell,
+.efata-premium-shell * {
+  box-sizing: border-box;
+}
+
+.efata-premium-shell {
+  width: 100%;
+  min-width: 0;
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+.efata-premium-shell__grid {
+  display: grid;
+  grid-template-columns: var(--efata-rail-width) minmax(0, 1fr) var(--efata-context-width);
+  width: 100%;
+  min-width: 0;
+  min-height: 100dvh;
+}
+
+.efata-premium-shell__rail,
+.efata-premium-shell__main,
+.efata-premium-shell__context {
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (max-width: 1439px) {
+  .efata-premium-shell__grid {
+    grid-template-columns: var(--efata-rail-width) minmax(0, 1fr);
+  }
+  .efata-premium-shell__context {
+    display: none;
+  }
+}
+
+@media (max-width: 899px) {
+  .efata-premium-shell__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .efata-premium-shell__rail {
+    display: none;
+  }
+}

@@ -1,0 +1,25 @@
+@import "../styles/tokens.css";
+@import "../styles/a11y.css";
+@import "../styles/responsive.css";
+
+.efata-premium-shell {
+  background:
+    radial-gradient(circle at 72% 0%, rgba(55, 197, 255, 0.07), transparent 34rem),
+    radial-gradient(circle at 16% 18%, rgba(125, 107, 255, 0.05), transparent 28rem),
+    var(--efata-canvas);
+  color: var(--efata-text);
+}
+
+.efata-premium-shell__rail {
+  border-right: 1px solid var(--efata-border);
+  background: rgba(16, 24, 33, 0.86);
+}
+
+.efata-premium-shell__main {
+  background: rgba(11, 15, 20, 0.54);
+}
+
+.efata-premium-shell__context {
+  border-left: 1px solid var(--efata-border);
+  background: rgba(16, 24, 33, 0.72);
+}

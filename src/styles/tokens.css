@@ -1,0 +1,27 @@
+:root {
+  --efata-cosmos: #0b0f14;
+  --efata-blue: #37c5ff;
+  --efata-gold: #f6c453;
+  --efata-graphite: #2c3239;
+  --efata-white: #f5f7fa;
+  --efata-violet: #7d6bff;
+
+  --efata-canvas: #0b0f14;
+  --efata-surface-1: #101821;
+  --efata-surface-2: rgba(20, 30, 42, 0.88);
+  --efata-surface-soft: rgba(20, 30, 42, 0.62);
+  --efata-border: rgba(245, 247, 250, 0.08);
+  --efata-border-active: rgba(55, 197, 255, 0.30);
+  --efata-text: #f5f7fa;
+  --efata-text-secondary: rgba(245, 247, 250, 0.68);
+  --efata-text-muted: rgba(245, 247, 250, 0.48);
+  --efata-success: #62d6a7;
+  --efata-danger: #ff7a8a;
+
+  --efata-rail-width: 248px;
+  --efata-context-width: 304px;
+  --efata-reading-width: 820px;
+  --efata-shell-gap: 16px;
+  --efata-radius-lg: 18px;
+  --efata-radius-md: 14px;
+}

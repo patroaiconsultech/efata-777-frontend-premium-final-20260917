@@ -1,0 +1,103 @@
+{
+  "backend_freeze_package_sha256": "dd7e9155f87feaed1f54fffad4113453476240780d50811b8fd4c98df66f4cbc",
+  "backend_candidate_sha256": "1b6fcb4b0bed645a8fb42864f632ad9d4cb7e66af41eddd9bf9a85dc6c428d40",
+  "openapi_sha256": "65f46f0c6808101d34d9628dc6b710ab48e9c1d4b4a0faa9be5b6c143cfebf1a",
+  "openapi_paths": 89,
+  "critical_contracts": {
+    "realtime_capabilities": {
+      "method": "GET",
+      "path": "/api/v2/realtime/capabilities"
+    },
+    "realtime_call": {
+      "method": "POST",
+      "path": "/api/v2/threads/{thread_id}/realtime/calls",
+      "schema": "RealtimeCallCreate",
+      "required": [
+        "sdp"
+      ],
+      "locale_enum": [
+        "pt-BR",
+        "en-US",
+        "es-419"
+      ],
+      "target_mode_enum": [
+        "direct",
+        "team"
+      ],
+      "selection_mode_enum": [
+        "explicit",
+        "all_eligible"
+      ]
+    },
+    "realtime_turn": {
+      "method": "POST",
+      "path": "/api/v2/threads/{thread_id}/realtime/turns",
+      "schema": "RealtimeFinalTranscript",
+      "required": [
+        "session_id",
+        "provider_item_id",
+        "transcript_final_id",
+        "transcript"
+      ],
+      "locale_enum": [
+        "pt-BR",
+        "en-US",
+        "es-419"
+      ]
+    },
+    "realtime_turn_stream": {
+      "method": "POST",
+      "path": "/api/v2/threads/{thread_id}/realtime/turns/stream",
+      "schema": "RealtimeFinalTranscript"
+    },
+    "stt_transcribe": {
+      "method": "POST",
+      "path": "/api/v2/threads/{thread_id}/voice/transcribe",
+      "content_type": "multipart/form-data",
+      "required": [
+        "audio"
+      ]
+    },
+    "stt_readiness": {
+      "method": "GET",
+      "path": "/api/v2/voice/stt/readiness",
+      "ready_http_status": 200,
+      "not_ready_http_status": 503,
+      "response_schema": "SttReadinessResponse",
+      "response_schema_ref": "#/components/schemas/SttReadinessResponse",
+      "required_fields": [
+        "enabled",
+        "provider",
+        "model",
+        "dependency_present",
+        "model_cached",
+        "local_files_only",
+        "ready",
+        "reason"
+      ],
+      "responses": {
+        "200": "#/components/schemas/SttReadinessResponse",
+        "503": "#/components/schemas/SttReadinessResponse"
+      },
+      "runtime_status_rule": "ready=true -> 200; ready=false -> 503"
+    },
+    "agents_catalog": {
+      "method": "GET",
+      "path": "/api/v2/agents",
+      "canonical_auditor_agent_id": "auditor"
+    },
+    "chat_stream": {
+      "method": "POST",
+      "path": "/api/v2/threads/{thread_id}/stream",
+      "schema": "MessageCreate",
+      "terminal_contract": "done OR error + done"
+    }
+  },
+  "runtime_truth": {
+    "realtime_provider_browser_e2e": "NOT_PROVED",
+    "stt_provider_browser_e2e": "NOT_PROVED",
+    "natan_runtime_staging_smoke": "NOT_PROVED",
+    "python_runtime_modal": "DEFERRED",
+    "billing": "DEFERRED_FROZEN"
+  }
+}

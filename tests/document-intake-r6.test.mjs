@@ -1,0 +1,14 @@
+import test from "node:test";import assert from "node:assert/strict";import fs from "node:fs";
+const api=fs.readFileSync("src/api.ts","utf8"),hook=fs.readFileSync("src/features/document-intake/hooks/useDocumentIntake.ts","utf8"),ui=fs.readFileSync("src/features/document-intake/components/LargePasteDecision.tsx","utf8"),app=fs.readFileSync("src/routes/AppConsole.tsx","utf8"),registry=fs.readFileSync("src/features/capabilities/registry.ts","utf8"),contract=JSON.parse(fs.readFileSync("tests/fixtures/document-intake-r3-openapi-contract.json","utf8"));
+test("OpenAPI binding",()=>{assert.equal(contract.backend_candidate_sha256,"1cab5f2152ffe50369ec62832b9e6ddeceb0eb0866b4e58fef0b11f37d6c775c");assert.equal(contract.openapi_sha256,"db3bbba620efab83b0690017d777155feb8f95cfb4e81270180e1b92b181b558");assert.equal(contract.openapi_paths,88)});
+test("canonical routes",()=>{assert.match(api,/document-intake\/capabilities/);assert.match(api,/document-intake\/paste/)});
+test("backend threshold small paste",()=>{assert.match(hook,/content\.length<=capabilities\.threshold_chars/);assert.match(app,/interceptPaste/)});
+test("large paste confirmation",()=>{assert.match(hook,/awaiting_confirmation/);assert.match(app,/preventDefault/);assert.match(ui,/Processar como documento/);assert.match(ui,/Cancelar/)});
+test("disabled blocks",()=>{assert.match(hook,/!capabilities\?\.supported\|\|!capabilities\.enabled/);assert.match(ui,/ainda não habilitado/)});
+test("limits",()=>{assert.equal(contract.paste.content.maxLength,5000000);assert.equal(contract.paste.title.maxLength,240);assert.match(ui,/maxLength=\{240\}/)});
+test("document chip",()=>{assert.match(ui,/item\.attachment_id/);assert.match(ui,/item\.source_chars/);assert.match(ui,/item\.sections/);assert.match(ui,/item\.chunks/)});
+test("reused",()=>{assert.match(hook,/result\.reused\?"reused":"ready"/);assert.match(ui,/Documento existente reutilizado/)});
+test("thread abort stale guard",()=>{assert.match(hook,/requestRef\.current\?\.abort/);assert.match(hook,/generation!==generationRef\.current/);assert.match(hook,/\},\[threadId\]\)/)});
+test("errors",()=>{for(const code of ["DOCUMENT_INTAKE_DISABLED","PASTE_BELOW_DOCUMENT_THRESHOLD","PASTE_TOO_LARGE","PASTE_CONTENT_INVALID","THREAD_READ_ONLY","UPLOAD_PERMISSION_REQUIRED","DOCUMENT_INTAKE_IDENTITY_CONFLICT","DOCUMENT_INTAKE_MANIFEST_TOO_LARGE"]){assert.match(hook,new RegExp(code));assert.match(ui,new RegExp(code))}});
+test("registry conservative",()=>assert.match(registry,/"document_intake\.large_paste"[\s\S]*status:"limited"[\s\S]*enabled:false[\s\S]*premiumQualified:false[\s\S]*runtimeProved:false/));
+test("upload distinct",()=>assert.equal(contract.scope.traditional_upload,"distinct_path"));
