@@ -42,6 +42,8 @@ import SafeMarkdown from "../components/SafeMarkdown";
 import PwaInstallButton from "../components/PwaInstallButton";
 import { ONBOARDING_DRAFT_KEY } from "./AccessPortal";
 import LegacyConversationAdapter from "../features/conversation/LegacyConversationAdapter";
+import { LargePasteDecision } from "../features/document-intake/components/LargePasteDecision";
+import { useDocumentIntake } from "../features/document-intake/hooks/useDocumentIntake";
 import {
   formatConversationTimestamp,
   formatDateTimeTitle,
@@ -2274,7 +2276,8 @@ export default function AppConsole() {
           <LargePasteDecision capabilities={documentIntake.capabilities} view={documentIntake.view} onConfirm={(title) => void documentIntake.confirm(title)} onCancel={documentIntake.cancel} />
           <textarea
             value={message}
-            onChange={(event) = onPaste={handleComposerPaste}> setMessage(event.target.value)}
+            onChange={(event) => setMessage(event.target.value)}
+            onPaste={handleComposerPaste}
             onKeyDown={(event) => {
               if (event.key === "Enter" && !event.shiftKey) {
                 event.preventDefault();
