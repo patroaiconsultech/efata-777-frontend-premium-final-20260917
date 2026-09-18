@@ -10,7 +10,7 @@ import {
 import Landing from "./routes/Landing";
 import AppConsole from "./routes/AppConsole";
 import AccessPortal from "./routes/AccessPortal";
-import AdminPanel from "./routes/AdminPanel";
+import AdminAccessGate from "./routes/AdminAccessGate";
 import InviteAccept from "./routes/InviteAccept";
 import PlatformInviteAccept from "./routes/PlatformInviteAccept";
 import TalentApplication from "./routes/TalentApplication";
@@ -37,7 +37,7 @@ export default function App() {
         <Route path="/access" element={<AccessPortal />} />
         <Route path="/talentos/candidatura" element={<TalentApplication />} />
         <Route path="/app" element={<AppEntry />} />
-        <Route path="/admin" element={<AdminPanel />} />
+        <Route path="/admin" element={<AdminAccessGate />} />
         <Route path="/app/billing" element={<BillingPremiumPreview />} />
         <Route path="/app/artifacts" element={<ArtifactPremiumPreview />} />
         <Route path="/invite/:token" element={<InviteAccept />} />

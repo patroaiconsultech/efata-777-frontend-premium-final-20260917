@@ -1248,6 +1248,26 @@ export type NativeBootstrapStatus = {
   completed: boolean;
 };
 
+export async function adminOtpStart(input: {
+  email: string;
+  password: string;
+}): Promise<{ status: string; challenge_token: string; expires_in_seconds: number }> {
+  return apiJson("/api/v2/auth/admin/otp/start", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function adminOtpVerify(input: {
+  challenge_token: string;
+  code: string;
+}): Promise<NativeSession> {
+  return apiJson("/api/v2/auth/admin/otp/verify", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
 export async function nativeLogin(input: {
   email: string;
   password: string;
