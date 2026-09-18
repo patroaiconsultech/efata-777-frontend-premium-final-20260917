@@ -2,6 +2,8 @@ import React, { FormEvent, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   ApiError,
+  adminOtpStart,
+  adminOtpVerify,
   nativeClaimAccount,
   nativeForgotPassword,
   nativeLogin,
@@ -20,6 +22,7 @@ export const ONBOARDING_DRAFT_KEY = "patroai_hyper_cocreator_onboarding";
 
 type Mode =
   | "login"
+  | "admin-otp"
   | "register"
   | "forgot"
   | "reset"
@@ -67,6 +70,8 @@ function friendlyAuthError(error: unknown): string {
       "Escolha uma senha menos previsível.",
     AUTH_CHALLENGE_INVALID:
       "Este link ou desafio expirou ou já foi utilizado.",
+    ADMIN_OTP_INVALID:
+      "O código administrativo é inválido, expirou ou já foi utilizado.",
     ACCOUNT_RECOVERY_NOT_ALLOWED:
       "Este acesso não pode ser ativado neste momento. Entre em contato com o administrador do seu espaço.",
     ACCOUNT_RECOVERY_ALREADY_COMPLETED:
@@ -128,6 +133,7 @@ export default function AccessPortal() {
   const [mfaSecret, setMfaSecret] = useState("");
   const [mfaUri, setMfaUri] = useState("");
   const [mfaCode, setMfaCode] = useState("");
+  const [adminOtpCode, setAdminOtpCode] = useState("");
   const [useRecoveryCode, setUseRecoveryCode] = useState(false);
   const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
   const [actionToken, setActionToken] = useState("");
@@ -199,6 +205,52 @@ export default function AccessPortal() {
         return;
       }
       setError("O acesso requer uma etapa adicional de segurança.");
+    } catch (err) {
+      // Admin identities provisioned before NativeCredential existed use the
+      // governed email-OTP corridor. Only fall back after terminal native
+      // credential failures; non-admin identities keep the original response.
+      if (err instanceof ApiError && (err.status === 401 || err.status === 423)) {
+        try {
+          const issue = await adminOtpStart({
+            email: email.trim(),
+            password,
+          });
+          setChallengeToken(issue.challenge_token);
+          setAdminOtpCode("");
+          setPassword("");
+          setMode("admin-otp");
+          setError("");
+          return;
+        } catch {
+          // Preserve the original login error so the fallback does not expose
+          // whether the submitted identity belongs to an administrative user.
+        }
+      }
+      setError(friendlyAuthError(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function submitAdminOtp(event: FormEvent) {
+    event.preventDefault();
+    if (!challengeToken || !/^\d{6}$/.test(adminOtpCode) || busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      const result = await adminOtpVerify({
+        challenge_token: challengeToken,
+        code: adminOtpCode,
+      });
+      const hasAdminRole = result.roles.some((role) =>
+        ["admin", "owner", "orkio_admin", "platform_owner"].includes(role),
+      );
+      if (!result.authenticated || !hasAdminRole) {
+        throw new Error("ADMIN_SESSION_NOT_CREATED");
+      }
+      setChallengeToken("");
+      setAdminOtpCode("");
+      navigate(returnPath, { replace: true });
     } catch (err) {
       setError(friendlyAuthError(err));
     } finally {
@@ -432,7 +484,7 @@ export default function AccessPortal() {
           Identidade protegida e controles adicionais para contas privilegiadas.
         </p>
 
-        {!["verify", "claim", "activate", "mfa-enroll", "mfa-verify", "recovery-codes"].includes(mode) ? (
+        {!["verify", "claim", "activate", "admin-otp", "mfa-enroll", "mfa-verify", "recovery-codes"].includes(mode) ? (
           <div className="access-tabs" role="tablist" aria-label="Modo de acesso">
             <button type="button" className={mode === "login" ? "active" : ""} onClick={() => switchMode("login")}>Entrar</button>
             <button type="button" className={mode === "register" ? "active" : ""} onClick={() => switchMode("register")}>Código</button>
@@ -450,6 +502,40 @@ export default function AccessPortal() {
             <button className="access-text-button" type="button" onClick={() => setShowPassword((v) => !v)}>{showPassword ? "Ocultar senha" : "Mostrar senha"}</button>
             <button className="access-primary" disabled={busy}>{busy ? "Abrindo sessão..." : "Entrar com segurança"}</button>
             <button className="access-text-button" type="button" onClick={() => switchMode("forgot")}>Esqueci minha senha</button>
+          </form>
+        ) : null}
+
+        {mode === "admin-otp" ? (
+          <form className="access-step" onSubmit={submitAdminOtp}>
+            <span>ACESSO ADMINISTRATIVO</span>
+            <h2>Confirme o código enviado ao seu e-mail.</h2>
+            <p>O código tem seis dígitos, expira em poucos minutos e pode ser usado uma única vez.</p>
+            <label>
+              <span>Código administrativo</span>
+              <input
+                value={adminOtpCode}
+                onChange={(event) => setAdminOtpCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={6}
+              />
+            </label>
+            <button className="access-primary" disabled={busy || adminOtpCode.length !== 6}>
+              {busy ? "Validando..." : "Concluir acesso"}
+            </button>
+            <button
+              className="access-text-button"
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                setMode("login");
+                setChallengeToken("");
+                setAdminOtpCode("");
+                setError("");
+              }}
+            >
+              Voltar ao login
+            </button>
           </form>
         ) : null}
 
