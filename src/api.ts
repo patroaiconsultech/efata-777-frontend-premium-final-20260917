@@ -391,11 +391,15 @@ export function activateAdminVoiceAssignment(
 }
 
 
-export type DocumentIntakeCapabilities = { supported:boolean; enabled:boolean; threshold_chars:number; max_chars:number; max_bytes:number; canonical_format:string; context_mode:string; requires_explicit_confirmation:boolean };
+export type LargePasteIntakeCapabilities = { supported:boolean; enabled:boolean; threshold_chars:number; max_chars:number; max_bytes:number; canonical_format:string; context_mode:string; requires_explicit_confirmation:boolean };
+export type LargeFileIntakeCapabilities = { supported:boolean; enabled:boolean; threshold_bytes:number; max_bytes:number; canonical_format:string; context_mode:string; requires_explicit_confirmation:boolean };
+export type DocumentIntakeCapabilities = { large_paste:LargePasteIntakeCapabilities; large_file:LargeFileIntakeCapabilities };
 export type DocumentIntakePasteRequest = { content:string; title?:string };
 export type DocumentIntakePasteResult = { intake_status:string; document_reference:string; attachment_id:string; filename:string; source_kind:string; source_sha256:string; source_chars:number; canonical_sha256:string; canonical_chars:number; sections:number; chunks:number; context_mode:string; reused:boolean };
+export type DocumentIntakeFileResult = { intake_status:string; document_reference:string; attachment_id:string; filename:string; canonical_filename:string; source_kind:string; source_sha256:string; source_size_bytes:number; source_chars:number; canonical_sha256:string; canonical_chars:number; sections:number; chunks:number; context_mode:string; reused:boolean };
 export function getDocumentIntakeCapabilities(signal?:AbortSignal):Promise<DocumentIntakeCapabilities>{ return apiJson<DocumentIntakeCapabilities>("/api/v2/document-intake/capabilities",{signal}); }
 export function createDocumentIntakeFromPaste(threadId:string,body:DocumentIntakePasteRequest,signal?:AbortSignal):Promise<DocumentIntakePasteResult>{ return apiJson<DocumentIntakePasteResult>(`/api/v2/threads/${encodeURIComponent(threadId)}/document-intake/paste`,{method:"POST",body:JSON.stringify(body),signal}); }
+export function uploadLargeDocumentIntake(threadId:string,file:File):Promise<DocumentIntakeFileResult>{ const form=new FormData();form.append("file",file);return apiForm<DocumentIntakeFileResult>(`/api/v2/threads/${encodeURIComponent(threadId)}/document-intake/file`,form); }
 
 export type Thread = {
   id: string;

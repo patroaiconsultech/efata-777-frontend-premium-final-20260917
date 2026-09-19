@@ -1,7 +1,7 @@
 {
-  "backend_candidate_sha256": "1cab5f2152ffe50369ec62832b9e6ddeceb0eb0866b4e58fef0b11f37d6c775c",
-  "openapi_sha256": "db3bbba620efab83b0690017d777155feb8f95cfb4e81270180e1b92b181b558",
-  "openapi_paths": 88,
+  "backend_candidate_sha256": "190eabb4fc6c82414fdc75f2d63c3718f4a52bc481a1e50941c3afb3924928d1",
+  "openapi_sha256": "7d873ae8cd869521da17360b481e348f0a9d93030c869b2a43f5726439783fc1",
+  "openapi_paths": 99,
   "capabilities": {
     "method": "GET",
     "path": "/api/v2/document-intake/capabilities"
@@ -21,6 +21,12 @@
   },
   "scope": {
     "large_paste": "canonical_markdown_selective_context",
-    "traditional_upload": "distinct_path"
+    "traditional_upload": "distinct_path",
+    "large_file": "thread_bound_streaming_selective_context"
+  },
+  "file": {
+    "method": "POST",
+    "path": "/api/v2/threads/{thread_id}/document-intake/file",
+    "content_type": "multipart/form-data"
   }
 }

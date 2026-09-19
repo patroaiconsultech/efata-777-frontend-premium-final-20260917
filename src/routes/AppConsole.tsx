@@ -34,6 +34,7 @@ import {
   technicalAgentTarget,
   transcribeVoice,
   uploadAttachment,
+  uploadLargeDocumentIntake,
   updateCoCreatorName,
   updateThreadTitle,
 } from "../api";
@@ -109,7 +110,6 @@ function describe(error: unknown): string {
     THREAD_NOT_FOUND: "Conversa não encontrada.",
     THREAD_ACCESS_DENIED: "Você não participa desta conversa.",
     THREAD_READ_ONLY: "Seu perfil nesta conversa é somente leitura.",
-    STT_DISABLED: "Transcrição de voz indisponível no momento.",
     STT_MODEL_NOT_PREWARMED: "Transcrição de voz indisponível no momento.",
     THREAD_RENAME_ROLE_REQUIRED:
       "Apenas o proprietário ou moderador pode renomear esta conversa.",
@@ -774,7 +774,6 @@ export default function AppConsole() {
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia(VOICE_INPUT_CONSTRAINTS);
-      if (isCurrentAttempt()) setRealtimeState("connecting");
       if (sessionId !== voiceSessionRef.current) {
         stream.getTracks().forEach((track) => track.stop());
         return;
@@ -1624,13 +1623,59 @@ export default function AppConsole() {
       setError("Crie ou selecione uma conversa antes de anexar.");
       return;
     }
+
+    const fileCapabilities = documentIntake.fileCapabilities;
+    if (
+      fileCapabilities?.supported &&
+      file.size > fileCapabilities.max_bytes
+    ) {
+      setError(
+        `O arquivo excede o limite máximo de ${(fileCapabilities.max_bytes / (1024 * 1024)).toFixed(0)} MB para documentos grandes.`,
+      );
+      return;
+    }
+    if (
+      fileCapabilities?.supported &&
+      file.size > fileCapabilities.threshold_bytes &&
+      !fileCapabilities.enabled
+    ) {
+      setError(
+        "Processamento de arquivo grande não está habilitado neste ambiente.",
+      );
+      return;
+    }
+
+    const useLargeIntake = Boolean(
+      fileCapabilities?.supported &&
+        fileCapabilities.enabled &&
+        file.size > fileCapabilities.threshold_bytes,
+    );
+
     setError("");
-    setNotice(`Preparando anexo: ${file.name}`);
+    setNotice(
+      useLargeIntake
+        ? `Preparando documento grande: ${file.name}`
+        : `Preparando anexo: ${file.name}`,
+    );
     setUploading(true);
     try {
-      const uploaded = await uploadAttachment(threadId, file);
+      const uploaded = useLargeIntake
+        ? await uploadLargeDocumentIntake(threadId, file).then((result) => ({
+            id: result.attachment_id,
+            filename: result.filename,
+            sha256: result.canonical_sha256,
+            reused: result.reused,
+          }))
+        : await uploadAttachment(threadId, file).then((result) => ({
+            ...result,
+            reused: false,
+          }));
       setRecentAttachment(uploaded.filename);
-      setNotice(`Anexo enviado: ${uploaded.filename} · processando contexto…`);
+      setNotice(
+        useLargeIntake
+          ? `Documento grande processado: ${uploaded.filename} · validando contexto seletivo…`
+          : `Anexo enviado: ${uploaded.filename} · processando contexto…`,
+      );
       try {
         const provenance = await getDocumentContextProvenance(threadId);
         const uploadedSource = provenance.source_provenance.find(
@@ -1641,16 +1686,29 @@ export default function AppConsole() {
             ? `${uploadedSource.provided_chars.toLocaleString("pt-BR")} de ${uploadedSource.source_chars.toLocaleString("pt-BR")} caracteres fornecidos`
             : `${uploadedSource.provided_chars.toLocaleString("pt-BR")} caracteres processados`;
           setDocumentProvenanceLabel(`✓ Documento lido · ${detail}`);
-          setNotice(`Documento lido: ${uploaded.filename}`);
+          setNotice(
+            useLargeIntake
+              ? `Documento grande disponível no contexto: ${uploaded.filename}`
+              : `Documento lido: ${uploaded.filename}`,
+          );
         } else if (provenance.source_ids.includes(uploaded.id)) {
-          setDocumentProvenanceLabel("Documento processado · provenance individual indisponível.");
+          setDocumentProvenanceLabel(
+            "Documento processado · provenance individual indisponível.",
+          );
           setNotice(`Anexo processado: ${uploaded.filename}`);
-        } else if (provenance.extraction_status === "failed" && provenance.sources === 0) {
+        } else if (
+          provenance.extraction_status === "failed" &&
+          provenance.sources === 0
+        ) {
           setDocumentProvenanceLabel("Falha de extração do documento.");
-          setNotice(`Anexo armazenado, mas o conteúdo não pôde ser extraído.`);
+          setNotice("Anexo armazenado, mas o conteúdo não pôde ser extraído.");
         } else {
-          setDocumentProvenanceLabel("Documento armazenado · este arquivo ainda não está disponível no contexto.");
-          setNotice(`Anexo armazenado: ${uploaded.filename} · contexto deste arquivo não confirmado.`);
+          setDocumentProvenanceLabel(
+            "Documento armazenado · este arquivo ainda não está disponível no contexto.",
+          );
+          setNotice(
+            `Anexo armazenado: ${uploaded.filename} · contexto deste arquivo não confirmado.`,
+          );
         }
       } catch (provenanceError) {
         // The upload is already committed. Do not present a secondary context
@@ -1660,8 +1718,12 @@ export default function AppConsole() {
           threadId,
           attachmentId: uploaded.id,
         });
-        setDocumentProvenanceLabel("Anexo armazenado · leitura do contexto pendente.");
-        setNotice(`Anexo armazenado: ${uploaded.filename} · contexto será atualizado depois.`);
+        setDocumentProvenanceLabel(
+          "Anexo armazenado · leitura do contexto pendente.",
+        );
+        setNotice(
+          `Anexo armazenado: ${uploaded.filename} · contexto será atualizado depois.`,
+        );
       }
     } catch (err) {
       setError(describe(err));
