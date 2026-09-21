@@ -343,6 +343,78 @@ export type AdminVoiceAssignmentDraft = {
   energy_label?: string | null;
 };
 
+export type AdminVoiceCatalogCreate = {
+  provider_key: "openai";
+  provider_voice_id: string;
+  display_name: string;
+  provider_model: string;
+  source_type: "BUILT_IN" | "CUSTOM_PROVIDER";
+  license_label: string;
+  cost_class: string;
+  provenance_url?: string | null;
+  catalog_version: string;
+  supported_locales: Array<"pt-BR" | "en-US" | "es-419">;
+  delivery_modes: Array<"REALTIME_STREAM" | "MESSAGE_PLAYBACK" | "VOICE_MESSAGE">;
+};
+
+export type AdminVoiceCatalogCuration = {
+  curation_status: "APPROVED" | "REJECTED";
+  evidence_ref: string;
+};
+
+export function createAdminVoiceCatalogEntry(
+  body: AdminVoiceCatalogCreate,
+): Promise<AdminVoiceCatalogEntry> {
+  return apiJson<AdminVoiceCatalogEntry>("/api/v2/admin/voice-catalog", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function curateAdminVoiceCatalogEntry(
+  voiceId: string,
+  body: AdminVoiceCatalogCuration,
+): Promise<AdminVoiceCatalogEntry> {
+  return apiJson<AdminVoiceCatalogEntry>(
+    `/api/v2/admin/voice-catalog/${encodeURIComponent(voiceId)}/curation`,
+    { method: "POST", body: JSON.stringify(body) },
+  );
+}
+
+export function deactivateAdminVoiceCatalogEntry(
+  voiceId: string,
+  evidenceRef: string,
+): Promise<AdminVoiceCatalogEntry> {
+  return apiJson<AdminVoiceCatalogEntry>(
+    `/api/v2/admin/voice-catalog/${encodeURIComponent(voiceId)}/deactivation`,
+    { method: "POST", body: JSON.stringify({ evidence_ref: evidenceRef }) },
+  );
+}
+
+export async function previewAdminVoiceCatalogEntry(
+  voiceId: string,
+  text: string,
+  locale: "pt-BR" | "en-US" | "es-419" = "pt-BR",
+): Promise<Blob> {
+  ensureConfigured();
+  await ensureCsrfToken();
+  const headers = authHeaders();
+  applyCsrfHeader(headers, "POST");
+  headers.set("Content-Type", "application/json");
+  const response = await fetch(
+    `${BASE}/api/v2/admin/voice-catalog/${encodeURIComponent(voiceId)}/preview`,
+    {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ text, locale }),
+      credentials: "include",
+    },
+  );
+  captureCsrfToken(response);
+  if (!response.ok) throw await readError(response);
+  return response.blob();
+}
+
 export function getAdminVoiceCatalog(): Promise<AdminVoiceCatalogEntry[]> {
   return apiJson<AdminVoiceCatalogEntry[]>("/api/v2/admin/voice-catalog");
 }
@@ -390,6 +462,188 @@ export function activateAdminVoiceAssignment(
   );
 }
 
+
+export function deactivateAdminVoiceAssignment(
+  assignmentId: string,
+  evidenceRef: string,
+): Promise<AdminVoiceAssignment> {
+  return apiJson<AdminVoiceAssignment>(
+    `/api/v2/admin/agent-voice-assignments/${encodeURIComponent(assignmentId)}/deactivation`,
+    { method: "POST", body: JSON.stringify({ evidence_ref: evidenceRef }) },
+  );
+}
+
+
+
+export type AgentStudioVersion = {
+  id: string;
+  tenant_id: string;
+  agent_slug: string;
+  base_agent_slug: string | null;
+  source_kind: "CUSTOM" | "CANONICAL_OVERRIDE";
+  version: number;
+  display_name: string;
+  canonical_name: string;
+  role_label: string;
+  department: string;
+  description: string;
+  system_instruction: string;
+  provider: string;
+  model_name: string;
+  temperature: number;
+  capabilities: Record<string, unknown>;
+  knowledge_config: Record<string, unknown>;
+  daily_budget_usd: number | null;
+  monthly_budget_usd: number | null;
+  lifecycle_state: "DRAFT" | "REVIEW" | "APPROVED" | "ACTIVE" | "SUSPENDED" | "RETIRED";
+  runtime_enabled: boolean;
+  review_evidence_ref: string | null;
+  approval_evidence_ref: string | null;
+  created_by: string;
+  updated_by: string;
+  approved_by: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+  approved_at: string | null;
+};
+
+export type AgentStudioCreate = {
+  agent_slug: string;
+  source_kind: "CUSTOM" | "CANONICAL_OVERRIDE";
+  base_agent_slug?: string | null;
+  display_name: string;
+  canonical_name: string;
+  role_label: string;
+  department: string;
+  description: string;
+  system_instruction: string;
+  provider: string;
+  model_name: string;
+  temperature: number;
+  capabilities: Record<string, unknown>;
+  knowledge_config: Record<string, unknown>;
+  daily_budget_usd?: number | null;
+  monthly_budget_usd?: number | null;
+};
+
+export function getAdminAgentStudioVersions(): Promise<AgentStudioVersion[]> {
+  return apiJson<AgentStudioVersion[]>("/api/v2/admin/agent-studio");
+}
+
+export function createAdminAgentStudioVersion(
+  body: AgentStudioCreate,
+): Promise<AgentStudioVersion> {
+  return apiJson<AgentStudioVersion>("/api/v2/admin/agent-studio", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function updateAdminAgentStudioDraft(
+  versionId: string,
+  patch: Partial<AgentStudioCreate>,
+): Promise<AgentStudioVersion> {
+  return apiJson<AgentStudioVersion>(
+    `/api/v2/admin/agent-studio/versions/${encodeURIComponent(versionId)}`,
+    { method: "PATCH", body: JSON.stringify(patch) },
+  );
+}
+
+export function createNextAdminAgentStudioVersion(
+  agentSlug: string,
+): Promise<AgentStudioVersion> {
+  return apiJson<AgentStudioVersion>(
+    `/api/v2/admin/agent-studio/${encodeURIComponent(agentSlug)}/versions`,
+    { method: "POST", body: "{}" },
+  );
+}
+
+export function submitAdminAgentStudioReview(
+  versionId: string,
+  evidenceRef: string,
+): Promise<AgentStudioVersion> {
+  return apiJson<AgentStudioVersion>(
+    `/api/v2/admin/agent-studio/versions/${encodeURIComponent(versionId)}/review`,
+    { method: "POST", body: JSON.stringify({ evidence_ref: evidenceRef }) },
+  );
+}
+
+export function approveAdminAgentStudioVersion(
+  versionId: string,
+  evidenceRef: string,
+): Promise<AgentStudioVersion> {
+  return apiJson<AgentStudioVersion>(
+    `/api/v2/admin/agent-studio/versions/${encodeURIComponent(versionId)}/approval`,
+    { method: "POST", body: JSON.stringify({ evidence_ref: evidenceRef }) },
+  );
+}
+
+export type AgentStudioPreview = {
+  agent_slug: string;
+  version: number;
+  lifecycle_state: string;
+  runtime_enabled: false;
+  compiled_system_instruction: string;
+  provider: string;
+  model: string;
+  temperature: number;
+  capabilities: Record<string, unknown>;
+  knowledge_config: Record<string, unknown>;
+  budget: { daily_usd: number | null; monthly_usd: number | null };
+  activation: { allowed: false; reason_code: string };
+};
+
+export function previewAdminAgentStudioVersion(
+  versionId: string,
+): Promise<AgentStudioPreview> {
+  return apiJson<AgentStudioPreview>(
+    `/api/v2/admin/agent-studio/versions/${encodeURIComponent(versionId)}/preview`,
+  );
+}
+
+export function requestAdminAgentStudioActivation(
+  versionId: string,
+  evidenceRef: string,
+): Promise<AgentStudioVersion> {
+  return apiJson<AgentStudioVersion>(
+    `/api/v2/admin/agent-studio/versions/${encodeURIComponent(versionId)}/activation`,
+    { method: "POST", body: JSON.stringify({ evidence_ref: evidenceRef }) },
+  );
+}
+
+
+export type AdminUsageCosts = {
+  tenant_id: string;
+  window_days: number;
+  tts: {
+    requests: number;
+    provider_syntheses: number;
+    cache_hits: number;
+    idempotency_replays: number;
+    chars_requested: number;
+    chars_provider_synthesized: number;
+    cost_rate_configured: boolean;
+    cost_per_1m_chars_usd: number | null;
+    estimated_provider_cost_usd: number | null;
+    by_agent: Record<string, { requests: number; provider_syntheses: number; chars: number }>;
+  };
+  billing: {
+    confirmed_revenue_usd: number;
+    refunded_or_chargeback_usd: number;
+    wallet_balance_usd: number;
+    wallet_quarantined_usd: number;
+    transaction_count: number;
+    wallet_count: number;
+  };
+  llm_usage: {
+    status: "NOT_METERED" | string;
+    reason_code: string;
+  };
+};
+
+export function getAdminUsageCosts(days = 30): Promise<AdminUsageCosts> {
+  return apiJson<AdminUsageCosts>(`/api/v2/admin/usage-costs?days=${days}`);
+}
 
 export type LargePasteIntakeCapabilities = { supported:boolean; enabled:boolean; threshold_chars:number; max_chars:number; max_bytes:number; canonical_format:string; context_mode:string; requires_explicit_confirmation:boolean };
 export type LargeFileIntakeCapabilities = { supported:boolean; enabled:boolean; threshold_bytes:number; max_bytes:number; canonical_format:string; context_mode:string; requires_explicit_confirmation:boolean };

@@ -51,8 +51,8 @@ test("contract availability still does not prove provider runtime", () => {
 test("evidence_ref UX enforces backend 8..500 length on both lifecycle actions", () => {
   assert.match(admin, /const isEvidenceRefValid = \(value: string\)/);
   assert.match(admin, /normalized\.length >= 8 && normalized\.length <= 500/);
-  assert.equal((admin.match(/minLength=\{8\}/g) || []).length, 2);
-  assert.equal((admin.match(/maxLength=\{500\}/g) || []).length, 2);
+  assert.ok((admin.match(/minLength=\{8\}/g) || []).length >= 2);
+  assert.ok((admin.match(/maxLength=\{500\}/g) || []).length >= 2);
   assert.match(admin, /!isEvidenceRefValid\(validationEvidenceByAssignment\[assignment\.id\] \|\| ""\)/);
   assert.match(admin, /!isEvidenceRefValid\(activationEvidenceByAssignment\[assignment\.id\] \|\| ""\)/);
 });
