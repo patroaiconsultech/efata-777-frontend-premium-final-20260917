@@ -118,14 +118,14 @@ export default function PlatformInviteAccept() {
 
   return (
     <main id="main-content" className="invite-shell">
-      <h1>Ativar acesso à EFATÀ 777</h1>
+      <h1>Crie sua conta na EFATÀ 777</h1>
       {phase === "checking" ? <p role="status">Validando o convite.</p> : null}
 
       {phase === "ready" && status ? (
         <form onSubmit={(event) => void submit(event)}>
           <p>
-            Convite para <strong>{status.email_hint}</strong>. O token é de uso único e
-            expira em {new Date(status.expires_at).toLocaleString("pt-BR")}.
+            Convite para <strong>{status.email_hint}</strong>. Defina seu nome e uma senha segura para ativar o acesso.
+            O token é de uso único e expira em {new Date(status.expires_at).toLocaleString("pt-BR")}.
           </p>
           <label>
             Nome

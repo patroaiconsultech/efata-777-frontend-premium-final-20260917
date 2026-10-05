@@ -32,7 +32,7 @@ type Mode =
   | "mfa-enroll"
   | "mfa-verify"
   | "recovery-codes";
-type RegisterStep = "code" | "cocreator" | "objective" | "credentials";
+type RegisterStep = "entry" | "invite" | "code" | "cocreator" | "objective" | "credentials";
 
 const GOALS = [
   "Criar uma nova oferta",
@@ -109,13 +109,36 @@ function safeReturnPath(value: string | null): string {
   return "/app";
 }
 
+function platformInviteTokenFromInput(value: string): string {
+  const clean = value.trim();
+  if (!clean) return "";
+
+  if (/^token=/i.test(clean)) {
+    return new URLSearchParams(clean).get("token")?.trim() || "";
+  }
+
+  try {
+    const parsed = new URL(clean, window.location.origin);
+    const fragment = parsed.hash.startsWith("#")
+      ? parsed.hash.slice(1)
+      : parsed.hash;
+    const token = new URLSearchParams(fragment).get("token")?.trim() || "";
+    if (token) return token;
+  } catch {
+    // A raw token is still accepted and validated by the backend on /activate.
+  }
+
+  return clean;
+}
+
 export default function AccessPortal() {
   const navigate = useNavigate();
   const [returnPath] = useState(() =>
     safeReturnPath(new URLSearchParams(window.location.search).get("next")),
   );
   const [mode, setMode] = useState<Mode>("login");
-  const [step, setStep] = useState<RegisterStep>("code");
+  const [step, setStep] = useState<RegisterStep>("entry");
+  const [platformInviteInput, setPlatformInviteInput] = useState("");
   const [grant, setGrant] = useState("");
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
@@ -162,7 +185,18 @@ export default function AccessPortal() {
   function switchMode(next: Mode) {
     setMode(next);
     setError("");
-    if (next === "register") setStep("code");
+    if (next === "register") setStep("entry");
+  }
+
+  function submitPlatformInvite(event: FormEvent) {
+    event.preventDefault();
+    const token = platformInviteTokenFromInput(platformInviteInput);
+    if (!token) {
+      setError("Cole o link ou o token do convite recebido.");
+      return;
+    }
+    setError("");
+    navigate(`/activate#token=${encodeURIComponent(token)}`);
   }
 
   async function beginMfaEnrollment(token: string) {
@@ -487,7 +521,7 @@ export default function AccessPortal() {
         {!["verify", "claim", "activate", "admin-otp", "mfa-enroll", "mfa-verify", "recovery-codes"].includes(mode) ? (
           <div className="access-tabs" role="tablist" aria-label="Modo de acesso">
             <button type="button" className={mode === "login" ? "active" : ""} onClick={() => switchMode("login")}>Entrar</button>
-            <button type="button" className={mode === "register" ? "active" : ""} onClick={() => switchMode("register")}>Código</button>
+            <button type="button" className={mode === "register" ? "active" : ""} onClick={() => switchMode("register")}>Criar conta</button>
           </div>
         ) : null}
 
@@ -502,6 +536,9 @@ export default function AccessPortal() {
             <button className="access-text-button" type="button" onClick={() => setShowPassword((v) => !v)}>{showPassword ? "Ocultar senha" : "Mostrar senha"}</button>
             <button className="access-primary" disabled={busy}>{busy ? "Abrindo sessão..." : "Entrar com segurança"}</button>
             <button className="access-text-button" type="button" onClick={() => switchMode("forgot")}>Esqueci minha senha</button>
+            <p className="access-note">
+              Ainda não tem acesso? Use “Criar conta” acima para ativar um convite por e-mail ou validar seu código de acesso.
+            </p>
           </form>
         ) : null}
 
@@ -621,11 +658,53 @@ export default function AccessPortal() {
           </form>
         ) : null}
 
+        {mode === "register" && step === "entry" ? (
+          <div className="access-step">
+            <span>NOVO ACESSO</span>
+            <h2>Crie sua conta na EFATÀ 777.</h2>
+            <p>O cadastro é controlado. Escolha como você recebeu autorização para entrar na plataforma.</p>
+            <button className="access-primary" type="button" onClick={() => setStep("invite")}>
+              Recebi um convite por e-mail
+            </button>
+            <button className="access-text-button" type="button" onClick={() => setStep("code")}>
+              Tenho um código de acesso
+            </button>
+          </div>
+        ) : null}
+
+        {mode === "register" && step === "invite" ? (
+          <form className="access-step" onSubmit={submitPlatformInvite}>
+            <span>CONVITE DE PLATAFORMA</span>
+            <h2>Ative seu convite e crie sua senha.</h2>
+            <p>
+              Abra o link enviado ao seu e-mail. Se estiver neste dispositivo, cole abaixo o link completo ou apenas o token do convite.
+            </p>
+            <label>
+              <span>Link ou token do convite</span>
+              <input
+                value={platformInviteInput}
+                onChange={(event) => setPlatformInviteInput(event.target.value)}
+                autoComplete="off"
+                placeholder="https://.../activate#token=..."
+              />
+            </label>
+            <button className="access-primary" disabled={!platformInviteInput.trim()}>
+              Continuar para criar minha senha
+            </button>
+            <button className="access-text-button" type="button" onClick={() => { setStep("entry"); setError(""); }}>
+              Voltar
+            </button>
+          </form>
+        ) : null}
+
         {mode === "register" && step === "code" ? (
           <form className="access-step" onSubmit={submitCode}>
             <span>ETAPA 1 DE 3</span><h2>Informe seu código de acesso.</h2>
             <input value={code} onChange={(e) => setCode(e.target.value)} autoComplete="off" placeholder="Código de acesso" />
             <button className="access-primary" disabled={busy}>{busy ? "Validando..." : "Validar código"}</button>
+            <button className="access-text-button" type="button" onClick={() => { setStep("entry"); setError(""); }}>
+              Voltar
+            </button>
           </form>
         ) : null}
 
