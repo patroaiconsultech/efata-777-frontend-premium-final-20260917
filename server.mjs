@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import http from "node:http";
+import https from "node:https";
 import path from "node:path";
 import {
   collectPublicRuntimeConfig,
@@ -10,6 +11,143 @@ const port = Number(process.env.PORT || 8080);
 const root = path.resolve("dist");
 const collectedRuntimeConfig = collectPublicRuntimeConfig(process.env);
 const runtimeConfigScript = runtimeEnvScript(collectedRuntimeConfig.config);
+
+const HOP_BY_HOP_HEADERS = new Set([
+  "connection",
+  "keep-alive",
+  "proxy-authenticate",
+  "proxy-authorization",
+  "te",
+  "trailer",
+  "transfer-encoding",
+  "upgrade",
+]);
+
+function localDevelopmentHost(hostname) {
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]";
+}
+
+function parseBackendOrigin(raw) {
+  const value = String(raw || "").trim();
+  if (!value) return { origin: null, error: null };
+
+  let parsed;
+  try {
+    parsed = new URL(value);
+  } catch {
+    return { origin: null, error: "URL_INVALID" };
+  }
+
+  if (parsed.username || parsed.password) {
+    return { origin: null, error: "URL_CREDENTIALS_FORBIDDEN" };
+  }
+  if (parsed.search || parsed.hash || (parsed.pathname && parsed.pathname !== "/")) {
+    return { origin: null, error: "ORIGIN_ONLY_REQUIRED" };
+  }
+  if (
+    parsed.protocol !== "https:" &&
+    !(parsed.protocol === "http:" && localDevelopmentHost(parsed.hostname))
+  ) {
+    return { origin: null, error: "HTTPS_REQUIRED" };
+  }
+
+  return { origin: parsed, error: null };
+}
+
+const backendOriginResult = parseBackendOrigin(process.env.ORKIO_BACKEND_ORIGIN);
+const backendOrigin = backendOriginResult.origin;
+
+if (backendOriginResult.error) {
+  console.error(
+    `[ORKIO frontend] invalid ORKIO_BACKEND_ORIGIN: ${backendOriginResult.error}`,
+  );
+}
+
+function isApiProxyPath(pathname) {
+  return pathname === "/api" || pathname.startsWith("/api/");
+}
+
+function proxyApiRequest(request, response) {
+  if (!backendOrigin) {
+    response.setHeader("Content-Type", "application/json; charset=utf-8");
+    response.setHeader("Cache-Control", "no-store");
+    response.writeHead(503);
+    response.end(JSON.stringify({ detail: "API_PROXY_NOT_CONFIGURED" }));
+    return;
+  }
+
+  const requestHost = String(request.headers.host || "").toLowerCase();
+  if (requestHost && requestHost === backendOrigin.host.toLowerCase()) {
+    response.setHeader("Content-Type", "application/json; charset=utf-8");
+    response.setHeader("Cache-Control", "no-store");
+    response.writeHead(500);
+    response.end(JSON.stringify({ detail: "API_PROXY_SELF_REFERENCE" }));
+    return;
+  }
+
+  const incoming = new URL(request.url || "/", "http://frontend.invalid");
+  const target = new URL(`${incoming.pathname}${incoming.search}`, backendOrigin);
+  const headers = {};
+
+  for (const [name, value] of Object.entries(request.headers)) {
+    const lower = name.toLowerCase();
+    if (lower === "host" || HOP_BY_HOP_HEADERS.has(lower) || value === undefined) {
+      continue;
+    }
+    headers[name] = value;
+  }
+
+  // Do not trust client-supplied forwarding headers. The application does not
+  // authorize from them; they are only provenance for infrastructure logs.
+  delete headers["x-forwarded-host"];
+  delete headers["x-forwarded-proto"];
+  delete headers["x-forwarded-for"];
+  headers["x-forwarded-host"] = request.headers.host || "";
+  headers["x-forwarded-proto"] = String(
+    request.headers["x-forwarded-proto"] || "https",
+  ).split(",")[0].trim();
+
+  const transport = target.protocol === "https:" ? https : http;
+  const upstream = transport.request(
+    target,
+    {
+      method: request.method,
+      headers,
+    },
+    (upstreamResponse) => {
+      response.statusCode = upstreamResponse.statusCode || 502;
+      if (upstreamResponse.statusMessage) {
+        response.statusMessage = upstreamResponse.statusMessage;
+      }
+
+      for (const [name, value] of Object.entries(upstreamResponse.headers)) {
+        if (
+          value === undefined ||
+          HOP_BY_HOP_HEADERS.has(name.toLowerCase())
+        ) {
+          continue;
+        }
+        response.setHeader(name, value);
+      }
+
+      upstreamResponse.pipe(response);
+    },
+  );
+
+  upstream.on("error", () => {
+    if (response.headersSent) {
+      response.destroy();
+      return;
+    }
+    response.setHeader("Content-Type", "application/json; charset=utf-8");
+    response.setHeader("Cache-Control", "no-store");
+    response.writeHead(502);
+    response.end(JSON.stringify({ detail: "API_PROXY_UPSTREAM_UNAVAILABLE" }));
+  });
+
+  request.on("aborted", () => upstream.destroy());
+  request.pipe(upstream);
+}
 
 if (collectedRuntimeConfig.errors.length) {
   console.error(
@@ -123,6 +261,11 @@ http
     const pathname = safePathname(request.url);
     if (!pathname || pathname.includes("\0")) {
       response.writeHead(400).end("Bad request");
+      return;
+    }
+
+    if (isApiProxyPath(pathname)) {
+      proxyApiRequest(request, response);
       return;
     }
 
