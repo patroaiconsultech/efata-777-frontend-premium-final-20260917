@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ApiError, acceptInvite, getNativeSession, isApiBaseConfigured } from "../api";
 
@@ -15,8 +15,17 @@ export default function InviteAccept() {
   const [detail, setDetail] = useState("");
   const [authenticated, setAuthenticated] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
+  const mountedRef = useRef(false);
+  const attemptedTokenRef = useRef<string | null>(null);
 
   const configured = isApiBaseConfigured();
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!configured) {
@@ -40,19 +49,23 @@ export default function InviteAccept() {
   }, [configured]);
 
   useEffect(() => {
-    if (!configured || checkingSession || !authenticated || !token || state !== "idle") return;
-    let active = true;
+    if (!configured || checkingSession || !authenticated || !token) return;
+    if (attemptedTokenRef.current === token) return;
+
+    attemptedTokenRef.current = token;
+    setDetail("");
     setState("working");
-    acceptInvite(token)
+
+    void acceptInvite(token)
       .then((result) => {
-        if (!active) return;
+        if (!mountedRef.current) return;
         setState("accepted");
         navigate(`/app?thread=${encodeURIComponent(result.thread_id)}`, {
           replace: true,
         });
       })
       .catch((error: unknown) => {
-        if (!active) return;
+        if (!mountedRef.current) return;
         const code = error instanceof ApiError ? error.code : "ERRO";
         const table: Record<string, string> = {
           INVITATION_NOT_FOUND: "Convite inválido ou inexistente.",
@@ -67,10 +80,7 @@ export default function InviteAccept() {
         setDetail(table[code] || `Não foi possível aceitar o convite (${code}).`);
         setState("failed");
       });
-    return () => {
-      active = false;
-    };
-  }, [authenticated, checkingSession, configured, navigate, state, token]);
+  }, [authenticated, checkingSession, configured, navigate, token]);
 
   return (
     <main id="main-content" className="invite-shell">
