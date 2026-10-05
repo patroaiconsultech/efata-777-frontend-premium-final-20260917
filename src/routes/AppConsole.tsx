@@ -1491,6 +1491,9 @@ export default function AppConsole() {
     const optimistic: ChatMessage = {
       id: `local-${Date.now()}`,
       author_type: "user",
+      author_id: me?.user_id || null,
+      user_id: me?.user_id || null,
+      author_display_name: me?.display_name?.trim() || null,
       agent_name: null,
       content,
       created_at: new Date().toISOString(),
@@ -1813,6 +1816,8 @@ export default function AppConsole() {
     selectedAgent?.display_name || me?.co_creator_name || DEFAULT_COCREATOR_LABEL;
   const visibleAgentAuthor = (itemAgentName?: string | null) =>
     itemAgentName?.trim() || "Agente";
+  const visibleHumanAuthor = (displayName?: string | null) =>
+    displayName?.trim() || "Participante";
   const selectedAgentRole =
     selectedAgent?.role_label || "Agente disponível";
   const selectedAgentInitial = selectedAgentName.slice(0, 1).toUpperCase();
@@ -2202,7 +2207,9 @@ export default function AppConsole() {
               >
                 <header className="message__meta">
                   <span className="message__author">
-                    {item.author_type === "agent" ? visibleAgentAuthor(item.agent_name) : "Você"}
+                    {item.author_type === "agent"
+                      ? visibleAgentAuthor(item.agent_name)
+                      : visibleHumanAuthor(item.author_display_name)}
                   </span>
                   <time
                     dateTime={item.created_at}

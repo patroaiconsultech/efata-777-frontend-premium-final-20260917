@@ -537,8 +537,15 @@ export default function AccessPortal() {
             <button className="access-primary" disabled={busy}>{busy ? "Abrindo sessão..." : "Entrar com segurança"}</button>
             <button className="access-text-button" type="button" onClick={() => switchMode("forgot")}>Esqueci minha senha</button>
             <p className="access-note">
-              Ainda não tem acesso? Use “Criar conta” acima para ativar um convite por e-mail ou validar seu código de acesso.
+              Ainda não tem acesso? Ative seu convite por e-mail ou valide seu código de acesso.
             </p>
+            <button
+              className="access-text-button"
+              type="button"
+              onClick={() => switchMode("register")}
+            >
+              Criar conta / Ativar convite
+            </button>
           </form>
         ) : null}
 

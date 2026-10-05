@@ -672,6 +672,9 @@ export type ThreadList = {
 export type ChatMessage = {
   id: string;
   author_type: "user" | "agent";
+  author_id?: string | null;
+  user_id?: string | null;
+  author_display_name: string | null;
   agent_id?: string | null;
   agent_name: string | null;
   content: string;
@@ -734,6 +737,12 @@ function normalizeMessage(value: unknown, index: number): ChatMessage | null {
   return {
     id,
     author_type: record.author_type === "agent" ? "agent" : "user",
+    author_id: typeof record.author_id === "string" ? record.author_id : null,
+    user_id: typeof record.user_id === "string" ? record.user_id : null,
+    author_display_name:
+      typeof record.author_display_name === "string"
+        ? record.author_display_name
+        : null,
     agent_id: typeof record.agent_id === "string" ? record.agent_id : null,
     agent_name: typeof record.agent_name === "string" ? record.agent_name : null,
     content: asText(record.content),
@@ -1698,6 +1707,7 @@ export type HyperCocreatorMe = {
   user_id: string;
   tenant_id: string;
   email?: string | null;
+  display_name?: string | null;
   roles: string[];
   admin_access: boolean;
   co_creator_name: string;
