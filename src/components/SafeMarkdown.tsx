@@ -12,7 +12,7 @@ function safeHref(value: unknown): string | null {
 }
 
 function inlineMarkdown(value: string): ReactNode[] {
-  const pattern = /(\[([^\]]+)\]\(([^)]+)\)|`([^`]+)`|(\*\*|__)(.+?)\5|\*([^*]+)\*|_([^_]+)_)/g;
+  const pattern = /\[([^\]]+)\]\(([^)]+)\)|`([^`]+)`|(\*\*|__)(.+?)\4|\*([^*]+)\*|(?<![A-Za-z0-9])_([^_]+)_(?![A-Za-z0-9])/g;
   const nodes: ReactNode[] = [];
   let cursor = 0;
   let match: RegExpExecArray | null;
@@ -20,8 +20,8 @@ function inlineMarkdown(value: string): ReactNode[] {
 
   while ((match = pattern.exec(value)) !== null) {
     if (match.index > cursor) nodes.push(value.slice(cursor, match.index));
-    const [token, linkToken, linkLabel, linkTarget, code, strongMarker, strongText, italicText, underscoreText] = match;
-    if (linkToken) {
+    const [token, linkLabel, linkTarget, code, strongMarker, strongText, italicText, underscoreText] = match;
+    if (linkLabel !== undefined && linkTarget !== undefined) {
       const href = safeHref(linkTarget);
       nodes.push(
         href ? (
