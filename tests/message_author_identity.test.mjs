@@ -14,7 +14,9 @@ test("chat contract carries human author identity separately from agent identity
 
 test("conversation renders persisted human display name instead of hardcoded voce", () => {
   assert.match(consoleSource, /visibleHumanAuthor/);
-  assert.match(consoleSource, /visibleHumanAuthor\(item\.author_display_name\)/);
+  assert.match(consoleSource, /visibleHumanAuthor\(item\)/);
+  assert.match(consoleSource, /item\.author_display_name\?\.trim\(\)/);
+  assert.match(consoleSource, /item\.author_id \|\| item\.user_id/);
   assert.doesNotMatch(
     consoleSource,
     /item\.author_type === "agent" \? visibleAgentAuthor\(item\.agent_name\) : "Você"/,
