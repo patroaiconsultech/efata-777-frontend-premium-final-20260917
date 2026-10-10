@@ -19,7 +19,7 @@ test("chronology uses backend created_at for threads and messages", () => {
 test("chronology has full accessible date titles and safe invalid fallback", () => {
   assert.match(chronology, /Intl\.DateTimeFormat/);
   assert.match(chronology, /formatDateTimeTitle/);
-  assert.match(chronology, /Horário indisponível/);
+  assert.match(chronology, /Data e hora indisponíveis/);
   assert.match(chronology, /Data indisponível/);
 });
 
