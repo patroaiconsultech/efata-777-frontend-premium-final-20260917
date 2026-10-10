@@ -1816,8 +1816,15 @@ export default function AppConsole() {
     selectedAgent?.display_name || me?.co_creator_name || DEFAULT_COCREATOR_LABEL;
   const visibleAgentAuthor = (itemAgentName?: string | null) =>
     itemAgentName?.trim() || "Agente";
-  const visibleHumanAuthor = (displayName?: string | null) =>
-    displayName?.trim() || "Participante";
+  const visibleHumanAuthor = (item: ChatMessage) => {
+    const canonicalName = item.author_display_name?.trim();
+    if (canonicalName) return canonicalName;
+    const authorId = item.author_id || item.user_id;
+    if (authorId && me?.user_id && authorId === me.user_id) {
+      return me.display_name?.trim() || me.co_creator_name?.trim() || "Você";
+    }
+    return "Participante";
+  };
   const selectedAgentRole =
     selectedAgent?.role_label || "Agente disponível";
   const selectedAgentInitial = selectedAgentName.slice(0, 1).toUpperCase();
@@ -2209,7 +2216,7 @@ export default function AppConsole() {
                   <span className="message__author">
                     {item.author_type === "agent"
                       ? visibleAgentAuthor(item.agent_name)
-                      : visibleHumanAuthor(item.author_display_name)}
+                      : visibleHumanAuthor(item)}
                   </span>
                   <time
                     dateTime={item.created_at}
@@ -2404,6 +2411,20 @@ export default function AppConsole() {
               Descartar
             </button>
           ) : null}
+          <button
+            type="button"
+            className={`realtime-button composer__realtime realtime-button--${realtimeState} ${
+              realtimeReady ? "realtime-button--ready" : "realtime-button--pending"
+            }`}
+            onClick={handleRealtimeButton}
+            aria-pressed={realtimeActive}
+            aria-label={realtimeActive ? "Encerrar Realtime" : "Abrir Realtime"}
+            title={realtimeReady ? (realtimeActive ? "Encerrar Realtime" : "Iniciar Realtime") : "Ver requisitos do Realtime"}
+          >
+            <span className="realtime-button__pulse" aria-hidden="true" />
+            <span className="realtime-button__icon" aria-hidden="true">◉</span>
+            <span className="realtime-button__copy"><strong>Realtime</strong></span>
+          </button>
           <button
             type="button"
             className="primary-button composer__send"

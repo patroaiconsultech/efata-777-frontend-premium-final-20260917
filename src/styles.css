@@ -2316,3 +2316,43 @@ button.header-cta {
     max-height: 100dvh;
   }
 }
+
+/* PWA premium composer: full-width editor, accessible actions below. */
+@media (max-width: 768px), (display-mode: standalone) {
+  .composer__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+  .composer__row > textarea {
+    order: -1;
+    flex: 0 0 100%;
+    width: 100%;
+    min-width: 0;
+    min-height: 104px;
+    max-height: min(34dvh, 240px);
+    resize: vertical;
+    font-size: 16px;
+  }
+  .composer__row > .composer__send { margin-left: auto; }
+  .composer__row > .composer__realtime {
+    display: inline-flex;
+    visibility: visible;
+    min-height: 44px;
+    min-width: 44px;
+    flex: 0 0 auto;
+    align-items: center;
+  }
+  .composer__realtime .realtime-button__copy small { display: none; }
+  .message__meta { flex-wrap: wrap; align-items: baseline; }
+  .message__meta time { white-space: nowrap; }
+}
+
+@media (min-width: 769px) and (display-mode: browser) {
+  .composer__realtime { display: none; }
+}
+
+@media (min-width: 769px) {
+  .composer__realtime { display: none; }
+}
