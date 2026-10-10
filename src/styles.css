@@ -861,7 +861,13 @@ a {
   }
 
   .composer__send {
-    display: none;
+    display: inline-flex;
+    flex: 0 0 auto;
+    min-width: 48px;
+    min-height: 48px;
+    align-items: center;
+    justify-content: center;
+    visibility: visible;
   }
 
   .update-banner {
@@ -2239,3 +2245,74 @@ button.header-cta {
 }
 
 .document-intake-decision,.document-intake-banner,.document-chip{width:100%;border:1px solid rgba(55,197,255,.22);border-radius:12px;padding:12px;background:rgba(11,15,20,.94)}.document-intake-decision{display:grid;gap:10px}.document-intake-decision label{display:grid;gap:6px}.document-intake-decision input{min-height:44px}.document-intake-decision>div{display:flex;gap:8px;flex-wrap:wrap}.document-chip{display:grid;gap:4px}.document-chip small,.document-chip em{opacity:.76}
+
+
+/* EFATA PWA PREMIUM — scoped console viewport stabilization.
+   Keep navigation, header and composer stationary; scroll only conversation. */
+@media (display-mode: standalone), (max-width: 768px) {
+  .console-main {
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .console-header {
+    position: relative;
+    flex: 0 0 auto;
+    z-index: 3;
+  }
+  .console-main > .thread {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  .console-main > .composer {
+    flex: 0 0 auto;
+    min-width: 0;
+    position: relative;
+    z-index: 4;
+    padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+  }
+  .composer__row {
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+  .composer__row textarea {
+    min-width: 0;
+    flex: 1 1 150px;
+  }
+  .composer__send {
+    display: inline-flex !important;
+    visibility: visible;
+    opacity: 1;
+    min-width: 48px;
+    min-height: 48px;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+  }
+  .console-sidebar {
+    overscroll-behavior-y: contain;
+  }
+}
+
+
+/* Viewport ownership: avoid page scrolling under the PWA composer. */
+@media (display-mode: standalone), (max-width: 768px) {
+  .console-shell {
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .console-main {
+    height: 100dvh;
+    max-height: 100dvh;
+  }
+  .console-sidebar {
+    max-height: 100dvh;
+  }
+}
