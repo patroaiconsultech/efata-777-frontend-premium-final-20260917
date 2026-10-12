@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   AUTH_REQUIRED_EVENT,
@@ -319,6 +319,9 @@ export default function AppConsole() {
   const realtimeTurnChainRef = useRef<Promise<void>>(Promise.resolve());
   const realtimeLifecycleRef = useRef(0);
   const messagesRequestRef = useRef(0);
+  const threadViewportRef = useRef<HTMLElement | null>(null);
+  const followLatestRef = useRef(true);
+  const scrollToLatestOnLoadRef = useRef(true);
   const messageAudioRef = useRef<HTMLAudioElement | null>(null);
   const messageAudioUrlRef = useRef("");
   const messageVoiceAbortRef = useRef<AbortController | null>(null);
@@ -345,11 +348,22 @@ export default function AppConsole() {
   }
 
   function scrollConversationToTop() {
-    document.querySelector<HTMLElement>(".thread")?.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
+    followLatestRef.current = false;
+    threadViewportRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   }
+
+  // Only follow new content while the reader remains near the latest message.
+  // On thread selection, the first loaded history always opens at the end.
+  useLayoutEffect(() => {
+    const viewport = threadViewportRef.current;
+    if (!viewport) return;
+    if (scrollToLatestOnLoadRef.current && messages.length > 0) {
+      viewport.scrollTop = viewport.scrollHeight;
+      scrollToLatestOnLoadRef.current = false;
+    } else if (followLatestRef.current && (messages.length > 0 || streamingText)) {
+      viewport.scrollTop = viewport.scrollHeight;
+    }
+  }, [threadId, messages, streamingText]);
 
   const selectThread = useCallback((id: string) => {
     if (id !== activeThreadRef.current) {
@@ -359,6 +373,8 @@ export default function AppConsole() {
       stopRealtimeSession();
       stopMessageAudio();
     }
+    scrollToLatestOnLoadRef.current = true;
+    followLatestRef.current = true;
     activeThreadRef.current = id;
     setThreadId(id);
     setMessages([]);
@@ -1484,6 +1500,7 @@ export default function AppConsole() {
       }
     }
 
+    followLatestRef.current = true;
     setError("");
     setNotice("");
     setSending(true);
@@ -2137,10 +2154,14 @@ export default function AppConsole() {
             ) : null}
             <button
               type="button"
+              className="console-header__invite"
               onClick={() => setShowInvite(true)}
-              disabled={!accountReady}
+              disabled={!accountReady || !threadId}
+              aria-label="Convidar usuários para esta conversa"
+              title="Convidar usuários para esta conversa"
             >
-              + Convidar
+              <span className="console-header__invite-icon" aria-hidden="true">+</span>
+              <span className="console-header__invite-label">+ Convidar</span>
             </button>
           </div>
         </header>
@@ -2189,9 +2210,16 @@ export default function AppConsole() {
         ) : null}
 
         <section
+          ref={threadViewportRef}
           className="thread"
           aria-label="Conversa"
           aria-busy={loading || sending}
+          onScroll={(event) => {
+            const viewport = event.currentTarget;
+            const remaining =
+              viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
+            followLatestRef.current = remaining <= 96;
+          }}
         >
           {loading && messages.length === 0 ? (
             <div className="thread-state" role="status">
@@ -2315,6 +2343,29 @@ export default function AppConsole() {
             </span>
           </div>
           <div className="composer__row">
+            <div className="composer__editor">
+          <LargePasteDecision capabilities={documentIntake.capabilities} view={documentIntake.view} onConfirm={(title) => void documentIntake.confirm(title)} onCancel={documentIntake.cancel} />
+          <textarea
+            value={message}
+            onChange={(event) => setMessage(event.target.value)}
+            onPaste={handleComposerPaste}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                void handleSend();
+              }
+            }}
+            placeholder="Digite sua mensagem."
+            aria-label="Mensagem"
+            disabled={
+              sending ||
+              !accountReady ||
+              voiceState === "recording" ||
+              voiceState === "transcribing"
+            }
+          />
+            </div>
+            <div className="composer__actions" role="group" aria-label="Ações de mensagem">
           <label
             className={
               !accountReady || !threadId || sending || uploading
@@ -2349,26 +2400,6 @@ export default function AppConsole() {
             <span aria-hidden="true">✦</span>
             <span className="agent-trigger__label">{executionTargetName}</span>
           </button>
-          <LargePasteDecision capabilities={documentIntake.capabilities} view={documentIntake.view} onConfirm={(title) => void documentIntake.confirm(title)} onCancel={documentIntake.cancel} />
-          <textarea
-            value={message}
-            onChange={(event) => setMessage(event.target.value)}
-            onPaste={handleComposerPaste}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && !event.shiftKey) {
-                event.preventDefault();
-                void handleSend();
-              }
-            }}
-            placeholder="Digite sua mensagem."
-            aria-label="Mensagem"
-            disabled={
-              sending ||
-              !accountReady ||
-              voiceState === "recording" ||
-              voiceState === "transcribing"
-            }
-          />
           <button
             type="button"
             className={
@@ -2440,6 +2471,7 @@ export default function AppConsole() {
           >
             {sending ? "Gerando…" : "Enviar"}
           </button>
+            </div>
           </div>
         </footer>
       </main>

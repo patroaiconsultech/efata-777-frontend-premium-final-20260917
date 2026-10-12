@@ -1503,7 +1503,7 @@ button.header-cta {
     display: none;
   }
 
-  .console-header__actions > button:not(.active-agent-chip) {
+  .console-header__actions > button:not(.active-agent-chip):not(.console-header__invite) {
     display: none;
   }
 
@@ -2355,4 +2355,262 @@ button.header-cta {
 
 @media (min-width: 769px) {
   .composer__realtime { display: none; }
+}
+
+
+/* EFATA 777 — console composer premium: explicit editor and toolbar.
+   The earlier responsive flex wrap is not a structural editor layout. */
+.console-shell {
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.console-main {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.console-main > .console-header {
+  flex: 0 0 auto;
+}
+
+.console-main > .thread {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scroll-behavior: auto;
+  scrollbar-gutter: stable;
+}
+
+.console-main > .artifact-delivery {
+  flex: 0 0 auto;
+  max-height: 22dvh;
+  overflow-y: auto;
+}
+
+.console-main > .composer {
+  flex: 0 0 auto;
+  min-width: 0;
+  padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+}
+
+.console-sidebar {
+  max-height: 100dvh;
+  overscroll-behavior-y: contain;
+}
+
+.composer__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+}
+
+.composer__editor {
+  display: grid;
+  min-width: 0;
+  width: 100%;
+  gap: 8px;
+}
+
+.composer__editor > textarea,
+.composer__row .composer__editor > textarea {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 88px;
+  max-height: min(32dvh, 240px);
+  flex: none;
+  resize: vertical;
+  font: inherit;
+  font-size: max(16px, 1rem);
+}
+
+.composer__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+}
+
+.composer__actions > * {
+  flex-shrink: 0;
+}
+
+.composer__actions > .composer__send {
+  display: inline-flex !important;
+  min-height: 46px;
+  min-width: 78px;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  visibility: visible;
+}
+
+.composer__actions > .composer__realtime {
+  display: inline-flex;
+  align-items: center;
+  min-height: 46px;
+  visibility: visible;
+}
+
+@media (min-width: 769px) {
+  .composer__actions > .composer__realtime {
+    display: none;
+  }
+}
+
+@media (min-width: 769px) and (display-mode: standalone) {
+  .composer__actions > .composer__realtime {
+    display: inline-flex;
+  }
+}
+
+@media (max-width: 768px) {
+  .composer__row {
+    display: grid;
+  }
+  .composer__actions {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(78px, 1.35fr);
+    gap: 6px;
+  }
+  .composer__actions > .attachment-button,
+  .composer__actions > .agent-trigger,
+  .composer__actions > .voice-button,
+  .composer__actions > .composer__realtime,
+  .composer__actions > .composer__send {
+    box-sizing: border-box;
+    display: inline-flex;
+    flex: none;
+    width: 100%;
+    min-width: 0;
+    min-height: 48px;
+    align-items: center;
+    justify-content: center;
+    padding-inline: 5px;
+    margin: 0;
+  }
+  .composer__actions > .composer__realtime {
+    flex-direction: column;
+    gap: 1px;
+    visibility: visible;
+  }
+  .composer__actions > .composer__realtime .realtime-button__pulse {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+  }
+  .composer__actions > .composer__realtime .realtime-button__copy {
+    display: block;
+    font-size: 0.57rem;
+    line-height: 1;
+    text-align: center;
+  }
+  .composer__actions > .composer__realtime .realtime-button__copy strong {
+    font-size: inherit;
+  }
+  .composer__actions > .agent-trigger .agent-trigger__label,
+  .composer__actions > .attachment-button .attachment-button__label {
+    display: none;
+  }
+  .composer__editor > textarea,
+  .composer__row .composer__editor > textarea {
+    min-height: 100px;
+    max-height: min(30dvh, 210px);
+  }
+  .composer__status {
+    gap: 8px;
+  }
+  .composer__status > span:first-child {
+    min-width: 0;
+  }
+  .message__meta {
+    flex-wrap: wrap;
+    gap: 4px 10px;
+  }
+  .message__meta time {
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 768px) and (max-height: 600px) {
+  .composer__editor > textarea,
+  .composer__row .composer__editor > textarea {
+    min-height: 62px;
+    max-height: 120px;
+  }
+  .composer__status .composer__agent {
+    display: none;
+  }
+}
+
+/* A rare transcript-review action must not displace the five core controls. */
+@media (max-width: 768px) {
+  .composer__actions > .voice-review__discard {
+    grid-column: 1 / -1;
+    justify-self: start;
+    order: 10;
+  }
+}
+
+/* PWA: keep the existing conversation-invitation action discoverable.
+   The backend continues to authorize invitation creation. */
+.console-header__invite {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid rgba(55, 197, 255, 0.32);
+  border-radius: 12px;
+  background: rgba(55, 197, 255, 0.1);
+  color: #eaf8ff;
+  font: inherit;
+  font-weight: 650;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.console-header__invite-icon {
+  display: none;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+.console-header__invite:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+.console-header__invite:focus-visible {
+  outline: 3px solid #f6c453;
+  outline-offset: 2px;
+}
+@media (max-width: 768px) {
+  .console-header__actions > .console-header__invite {
+    display: inline-flex;
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    padding: 0;
+    flex: 0 0 44px;
+  }
+  .console-header__invite-icon { display: inline; }
+  .console-header__invite-label { display: none; }
+  .console-header__title { min-width: 0; }
+  .console-header__title-row { min-width: 0; }
+  .console-header__title-row b {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
