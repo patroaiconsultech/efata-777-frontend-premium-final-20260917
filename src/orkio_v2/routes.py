@@ -1,9 +1,11 @@
-import asyncio, hashlib, json, logging
+import asyncio, hashlib, json, logging, threading
+from datetime import datetime, timedelta, timezone
 from pathlib import Path, PurePosixPath
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
 from fastapi.responses import Response, StreamingResponse
 from sqlalchemy import select, text, func
-from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session, sessionmaker
 from .auth import Principal, require_principal
 from .config import Settings, get_settings
 from .database import Base, get_db, engine
@@ -13,12 +15,14 @@ from .services.invitations import create_invitation, accept_invitation
 from .services.identity import (
     require_provisioned_principal,
     require_provisioned_admin,
+    require_provisioned_superadmin,
     require_known_principal,
     assert_provisioned,
 )
 from .services.hyper_cocreator import (
     AccessGateError,
     complete_onboarding,
+    hyper_cocreator_profile_message,
     hyper_cocreator_system_message,
     is_allowlisted_admin,
     profile_for,
@@ -27,19 +31,37 @@ from .services.hyper_cocreator import (
     validate_access_code,
 )
 from .services import llm
+from .services.github_agent_tools import prepare_github_tool_history
 from .services.document_context import build_document_context, document_context_message
 from .services.artifact_context import artifact_context_message
-from .services.platform_knowledge import platform_knowledge_message
+from .services.platform_knowledge import system_capability_guard_message
+from .services.knowledge_retrieval import knowledge_context_messages
 from .services.attachment_service import AttachmentIdentityConflict, persist_attachment
+from .services.unified_document_intake import (
+    UnifiedDocumentIntakeError,
+    ingest_large_file,
+    ingest_large_paste,
+)
 from .services.blob_storage import BlobStorageError, build_blob_storage
+from .billing import repository as billing_repository
+from .services.voice_binding import VoiceProfile
+from .services.text_to_speech import TextToSpeechError, synthesize_speech
 from .agents.registry import AgentNotFound, list_agents
 from .services.execution_router import resolve_direct_target_decision
 from .services.target_resolver import TargetAmbiguous, TargetNotFound
 from .services.direct_runtime import (
     build_turn as build_direct_turn,
     envelope_payload,
-    history_item,
     persist_agent_response,
+)
+from .services.thread_access_policy import (
+    ThreadAccessPolicyError,
+    require_thread_access,
+    visible_messages,
+)
+from .services.conversation_history_policy import (
+    DIRECT_HISTORY_POLICY_VERSION,
+    project_direct_history,
 )
 from .runtime.contracts import RuntimeChannel
 from .runtime.events import RuntimeEvent, RuntimeEventType, validate_runtime_sequence
@@ -49,6 +71,7 @@ from .services.agent_availability import availability_for, readiness_probe_for_i
 from .services.artifact_generation import (
     ArtifactGenerationError,
     ArtifactStorageError,
+    artifact_capability_manifest,
     artifact_generation_system_message,
     artifact_payload,
     default_filename,
@@ -68,17 +91,110 @@ from .services.capability_plane import (
     runtime_capability_messages,
 )
 from .services.capability_policy import CapabilityPolicy, CapabilityPolicyError
+from .services.team_runtime import list_team_definitions, team_definition_payload
 from .services.internal_consultation import (
     InternalConsultationError,
     build_internal_consultation_context,
     internal_contribution_messages,
 )
-from .services.python_tool import PythonToolError, execute_python
+from .services.python_tool import PythonToolError
+from .services.python_runtime.contracts import PythonRuntimeContext, PythonRuntimeError
+from .services.python_runtime.gateway import execute_python_runtime
 from .services.external_read_tool import ExternalReadError, read_external_url
+from .services.ao01_audit_trace import emit_audit_trace
+from .services.audit_invocation_directive import looks_like_audit_directive
+from .services.audit_natural_binding import (
+    NaturalAuditBinding,
+    resolve_natural_audit_binding,
+)
+from .services.audit_invocation_rate_limit import AuditDirectiveAbuseLimiter
+from .services.audit_invocation_service import (
+    AuditInvocationError,
+    AuditInvocationOutcome,
+    GovernedAuditInvocationService,
+)
 
 router=APIRouter(prefix="/api/v2")
 artifact_gate_logger=logging.getLogger("orkio.artifact_gate")
 internal_consultation_logger=logging.getLogger("orkio.internal_consultation")
+llm_runtime_logger=logging.getLogger("orkio.llm_runtime")
+history_policy_logger=logging.getLogger("orkio.history_policy")
+
+
+def _audit_trace_turn(
+    stage: str,
+    *,
+    turn,
+    settings: Settings,
+    capability_id: str | None = None,
+    operation: str | None = None,
+    audit_execution_id: str | None = None,
+    status: str | None = None,
+    error_code: str | None = None,
+) -> None:
+    emit_audit_trace(
+        stage,
+        trace_id=turn.execution_id,
+        request_id=turn.request_id,
+        execution_id=turn.execution_id,
+        audit_execution_id=audit_execution_id,
+        thread_id=turn.thread_id,
+        tenant_id=turn.tenant_id,
+        requested_agent=turn.requested_target,
+        resolved_agent=turn.resolved_agent_id,
+        turn_owner=turn.turn_owner_agent_id,
+        route_family=turn.route_family.value,
+        channel=turn.channel.value,
+        capability_id=capability_id,
+        operation=operation,
+        deployment_id=(
+            getattr(settings, "railway_deployment_id", None)
+            or getattr(settings, "release_sha", None)
+            or "unknown"
+        ),
+        build_sha=str(getattr(settings, "release_sha", "unknown") or "unknown"),
+        status=status,
+        error_code=error_code,
+    )
+
+
+_audit_directive_abuse_limiters: dict[int, AuditDirectiveAbuseLimiter] = {}
+_audit_directive_abuse_limiters_lock = threading.Lock()
+
+
+def _audit_session_factory(db: Session):
+    return sessionmaker(bind=db.get_bind(), expire_on_commit=False)
+
+
+def _audit_directive_abuse_limiter(policy: CapabilityPolicy) -> AuditDirectiveAbuseLimiter:
+    limit = int(policy.audit_directive_user_rate_limit)
+    with _audit_directive_abuse_limiters_lock:
+        limiter = _audit_directive_abuse_limiters.get(limit)
+        if limiter is None:
+            limiter = AuditDirectiveAbuseLimiter(
+                window_seconds=60,
+                per_user_limit=limit,
+            )
+            _audit_directive_abuse_limiters[limit] = limiter
+        return limiter
+
+
+def _audit_invocation_service(db: Session, settings: Settings) -> GovernedAuditInvocationService:
+    policy = CapabilityPolicy.from_env()
+    return GovernedAuditInvocationService(
+        session_factory=_audit_session_factory(db),
+        settings=settings,
+        project_root=Path(__file__).resolve().parents[2],
+        policy=policy,
+        directive_abuse_limiter=_audit_directive_abuse_limiter(policy),
+    )
+
+
+def _audit_error_detail(exc: AuditInvocationError) -> dict[str, object]:
+    detail: dict[str, object] = {"code": exc.code}
+    if exc.audit_reference is not None:
+        detail["audit"] = exc.audit_reference
+    return detail
 
 
 @router.post("/access/validate")
@@ -147,10 +263,12 @@ def me(
     db: Session = Depends(get_db),
 ):
     profile = profile_for(db, tenant_id=p.tenant_id, user_id=p.user_id)
+    current_user = db.get(User, p.user_id)
     return {
         "user_id": p.user_id,
         "tenant_id": p.tenant_id,
         "email": p.email,
+        "display_name": current_user.display_name if current_user else None,
         "roles": list(p.roles),
         "admin_access": is_allowlisted_admin(p, settings),
         "co_creator_name": (
@@ -180,7 +298,7 @@ def rename_hyper_cocreator(
 
 @router.get("/admin/overview")
 def admin_overview(
-    p: Principal = Depends(require_provisioned_principal),
+    p: Principal = Depends(require_provisioned_superadmin),
     settings: Settings = Depends(get_settings),
     db: Session = Depends(get_db),
 ):
@@ -224,12 +342,741 @@ def admin_overview(
         "release_sha": settings.release_sha,
     }
 
+def _resolve_audit_request(
+    message: str,
+    *,
+    resolved_agent_id: str,
+) -> tuple[bool, str | None, NaturalAuditBinding | None]:
+    if looks_like_audit_directive(message):
+        return True, message, None
+    natural = resolve_natural_audit_binding(
+        message,
+        resolved_agent_id=resolved_agent_id,
+    )
+    if natural is None:
+        return False, None, None
+    return True, natural.directive_message, natural
+
+
+def _natural_audit_http_error(binding: NaturalAuditBinding) -> HTTPException:
+    code = binding.error_code or "CAPABILITY_UNAVAILABLE"
+    status = 501 if code == "CAPABILITY_UNAVAILABLE" else 400
+    detail: dict[str, object] = {
+        "code": code,
+        "audit_intent": binding.intent,
+        "evidence_status": "NOT_PROVEN",
+    }
+    if binding.required_capability_id:
+        detail["required_capability_id"] = binding.required_capability_id
+    return HTTPException(status, detail=detail)
+
+
+def _require_console_superadmin(p: Principal, settings: Settings) -> Principal:
+    return require_allowlisted_admin_principal(p, settings)
+
+
+@router.get("/admin/usage-costs")
+def admin_usage_costs(
+    days: int = Query(30, ge=1, le=90),
+    p: Principal = Depends(require_provisioned_superadmin),
+    settings: Settings = Depends(get_settings),
+    db: Session = Depends(get_db),
+):
+    _require_console_superadmin(p, settings)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    events = db.scalars(
+        select(AuditEvent)
+        .where(
+            AuditEvent.tenant_id == p.tenant_id,
+            AuditEvent.action == "message_tts_request",
+            AuditEvent.created_at >= cutoff,
+        )
+        .order_by(AuditEvent.created_at.desc())
+    ).all()
+
+    requests = 0
+    provider_syntheses = 0
+    cache_hits = 0
+    idempotency_replays = 0
+    chars_requested = 0
+    chars_provider = 0
+    by_agent: dict[str, dict[str, int]] = {}
+
+    for event in events:
+        if event.outcome != "success":
+            continue
+        metadata = event.metadata_json or {}
+        requests += 1
+        chars = int(metadata.get("chars") or 0)
+        chars_requested += chars
+        cache_hit = bool(metadata.get("cache_hit"))
+        replay = bool(metadata.get("idempotency_replay"))
+        if cache_hit:
+            cache_hits += 1
+        if replay:
+            idempotency_replays += 1
+        if not cache_hit and not replay:
+            provider_syntheses += 1
+            chars_provider += chars
+        agent_id = str(metadata.get("agent_id") or "unknown")
+        bucket = by_agent.setdefault(
+            agent_id,
+            {"requests": 0, "provider_syntheses": 0, "chars": 0},
+        )
+        bucket["requests"] += 1
+        bucket["chars"] += chars
+        if not cache_hit and not replay:
+            bucket["provider_syntheses"] += 1
+
+    rate = float(settings.tts_cost_per_1m_chars_usd)
+    estimated = round((chars_provider / 1_000_000.0) * rate, 6) if rate > 0 else None
+    billing = billing_repository.admin_summary(db, tenant_id=p.tenant_id)
+
+    return {
+        "tenant_id": p.tenant_id,
+        "window_days": days,
+        "tts": {
+            "requests": requests,
+            "provider_syntheses": provider_syntheses,
+            "cache_hits": cache_hits,
+            "idempotency_replays": idempotency_replays,
+            "chars_requested": chars_requested,
+            "chars_provider_synthesized": chars_provider,
+            "cost_rate_configured": rate > 0,
+            "cost_per_1m_chars_usd": rate if rate > 0 else None,
+            "estimated_provider_cost_usd": estimated,
+            "by_agent": by_agent,
+        },
+        "billing": {
+            key: float(value) if hasattr(value, "as_tuple") else value
+            for key, value in billing.items()
+        },
+        "llm_usage": {
+            "status": "NOT_METERED",
+            "reason_code": "LLM_TOKEN_LEDGER_NOT_IMPLEMENTED",
+        },
+    }
+
+
+@router.get("/admin/users")
+def admin_users(
+    p: Principal = Depends(require_provisioned_superadmin),
+    settings: Settings = Depends(get_settings),
+    db: Session = Depends(get_db),
+):
+    _require_console_superadmin(p, settings)
+    rows = db.execute(
+        select(Membership, User)
+        .join(User, User.id == Membership.user_id)
+        .where(Membership.tenant_id == p.tenant_id)
+        .order_by(func.lower(User.email))
+    ).all()
+    return [
+        {
+            "user_id": user.id,
+            "email": user.email,
+            "display_name": user.display_name,
+            "role": membership.role,
+            "active": membership.active,
+            "email_verified": user.email_verified_at is not None,
+            "created_at": user.created_at.isoformat() if user.created_at else None,
+        }
+        for membership, user in rows
+    ]
+
+
+@router.get("/admin/agents")
+def admin_agents(
+    p: Principal = Depends(require_provisioned_superadmin),
+    settings: Settings = Depends(get_settings),
+):
+    _require_console_superadmin(p, settings)
+    return [
+        {
+            "slug": agent.slug,
+            "canonical_name": agent.canonical_name,
+            "display_name": agent.display_name,
+            "role_code": agent.role_code,
+            "role_label": agent.role_label,
+            "organizational_level": agent.organizational_level,
+            "department": agent.department,
+            "founder_direct_access": agent.founder_direct_access,
+            "target_kind": agent.target_kind.value,
+            "availability": availability_for(agent, settings).to_dict(),
+        }
+        for agent in list_agents()
+    ]
+
+
+def _admin_voice_catalog_payload(row: VoiceCatalogEntry) -> dict:
+    return {
+        "id": row.id,
+        "provider_key": row.provider_key,
+        "provider_voice_id": row.provider_voice_id,
+        "display_name": row.display_name,
+        "provider_model": row.provider_model,
+        "source_type": row.source_type,
+        "license_label": row.license_label,
+        "cost_class": row.cost_class,
+        "provenance_url": row.provenance_url,
+        "catalog_version": row.catalog_version,
+        "supported_locales": row.supported_locales,
+        "delivery_modes": row.delivery_modes,
+        "curation_status": row.curation_status,
+        "active": row.active,
+    }
+
+
+@router.get("/admin/voice-catalog")
+def admin_voice_catalog(
+    p: Principal = Depends(require_provisioned_superadmin),
+    settings: Settings = Depends(get_settings),
+    db: Session = Depends(get_db),
+):
+    _require_console_superadmin(p, settings)
+    rows = db.scalars(
+        select(VoiceCatalogEntry).order_by(
+            VoiceCatalogEntry.provider_key,
+            VoiceCatalogEntry.display_name,
+        )
+    ).all()
+    return [_admin_voice_catalog_payload(row) for row in rows]
+
+
+@router.post("/admin/voice-catalog")
+def admin_create_voice_catalog_entry(
+    body: AdminVoiceCatalogCreate,
+    p: Principal = Depends(require_provisioned_superadmin),
+    settings: Settings = Depends(get_settings),
+    db: Session = Depends(get_db),
+):
+    _require_console_superadmin(p, settings)
+    duplicate = db.scalar(
+        select(VoiceCatalogEntry).where(
+            VoiceCatalogEntry.provider_key == body.provider_key,
+            VoiceCatalogEntry.provider_voice_id == body.provider_voice_id,
+        )
+    )
+    if duplicate is not None:
+        raise HTTPException(409, "VOICE_CATALOG_ENTRY_EXISTS")
+
+    row = VoiceCatalogEntry(
+        provider_key=body.provider_key,
+        provider_voice_id=body.provider_voice_id.strip(),
+        display_name=body.display_name.strip(),
+        provider_model=body.provider_model.strip(),
+        source_type=body.source_type,
+        license_label=body.license_label.strip(),
+        cost_class=body.cost_class.strip(),
+        provenance_url=(body.provenance_url or "").strip() or None,
+        catalog_version=body.catalog_version.strip(),
+        supported_locales=list(dict.fromkeys(body.supported_locales)),
+        delivery_modes=list(dict.fromkeys(body.delivery_modes)),
+        curation_status="REVIEW_REQUIRED",
+        active=True,
+    )
+    db.add(row)
+    try:
+        db.flush()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(409, "VOICE_CATALOG_ENTRY_EXISTS") from exc
+    db.add(
+        AuditEvent(
+            tenant_id=p.tenant_id,
+            actor_id=p.user_id,
+            action="ADMIN_VOICE_CATALOG_CREATED",
+            resource_type="voice_catalog_entry",
+            resource_id=row.id,
+            outcome="SUCCESS",
+            metadata_json={
+                "provider_key": row.provider_key,
+                "provider_voice_id": row.provider_voice_id,
+                "curation_status": row.curation_status,
+            },
+        )
+    )
+    db.commit()
+    db.refresh(row)
+    return _admin_voice_catalog_payload(row)
+
+
+@router.post("/admin/voice-catalog/{voice_id}/curation")
+def admin_curate_voice_catalog_entry(
+    voice_id: str,
+    body: AdminVoiceCatalogCurationUpdate,
+    p: Principal = Depends(require_provisioned_superadmin),
+    settings: Settings = Depends(get_settings),
+    db: Session = Depends(get_db),
+):
+    _require_console_superadmin(p, settings)
+    row = db.get(VoiceCatalogEntry, voice_id)
+    if row is None:
+        raise HTTPException(404, "VOICE_CATALOG_ENTRY_NOT_FOUND")
+    if not row.active:
+        raise HTTPException(409, "VOICE_CATALOG_ENTRY_INACTIVE")
+    row.curation_status = body.curation_status
+    db.add(
+        AuditEvent(
+            tenant_id=p.tenant_id,
+            actor_id=p.user_id,
+            action="ADMIN_VOICE_CATALOG_CURATED",
+            resource_type="voice_catalog_entry",
+            resource_id=row.id,
+            outcome="SUCCESS",
+            metadata_json={
+                "curation_status": body.curation_status,
+                "evidence_ref": body.evidence_ref,
+            },
+        )
+    )
+    db.commit()
+    db.refresh(row)
+    return _admin_voice_catalog_payload(row)
+
+
+@router.post("/admin/voice-catalog/{voice_id}/deactivation")
+def admin_deactivate_voice_catalog_entry(
+    voice_id: str,
+    body: AdminVoiceCatalogDeactivateRequest,
+    p: Principal = Depends(require_provisioned_superadmin),
+    settings: Settings = Depends(get_settings),
+    db: Session = Depends(get_db),
+):
+    _require_console_superadmin(p, settings)
+    row = db.get(VoiceCatalogEntry, voice_id)
+    if row is None:
+        raise HTTPException(404, "VOICE_CATALOG_ENTRY_NOT_FOUND")
+    in_use = db.scalar(
+        select(AgentVoiceAssignment).where(
+            AgentVoiceAssignment.voice_catalog_id == row.id,
+            AgentVoiceAssignment.active.is_(True),
+        )
+    )
+    if in_use is not None:
+        raise HTTPException(409, "VOICE_CATALOG_ENTRY_IN_USE")
+    row.active = False
+    db.add(
+        AuditEvent(
+            tenant_id=p.tenant_id,
+            actor_id=p.user_id,
+            action="ADMIN_VOICE_CATALOG_DEACTIVATED",
+            resource_type="voice_catalog_entry",
+            resource_id=row.id,
+            outcome="SUCCESS",
+            metadata_json={"evidence_ref": body.evidence_ref},
+        )
+    )
+    db.commit()
+    db.refresh(row)
+    return _admin_voice_catalog_payload(row)
+
+
+@router.post("/admin/voice-catalog/{voice_id}/activation")
+def admin_activate_voice_catalog_entry(
+    voice_id: str,
+    body: AdminVoiceCatalogDeactivateRequest,
+    p: Principal = Depends(require_provisioned_superadmin),
+    settings: Settings = Depends(get_settings),
+    db: Session = Depends(get_db),
+):
+    """Reactivate a previously deactivated catalog entry.
+
+    Activation only restores the catalog entry's availability. It does not
+    create or reactivate any agent assignment; assignment validation and
+    activation remain separate governed gates.
+    """
+    _require_console_superadmin(p, settings)
+    row = db.get(VoiceCatalogEntry, voice_id)
+    if row is None:
+        raise HTTPException(404, "VOICE_CATALOG_ENTRY_NOT_FOUND")
+    if row.active:
+        return _admin_voice_catalog_payload(row)
+    row.active = True
+    db.add(
+        AuditEvent(
+            tenant_id=p.tenant_id,
+            actor_id=p.user_id,
+            action="ADMIN_VOICE_CATALOG_ACTIVATED",
+            resource_type="voice_catalog_entry",
+            resource_id=row.id,
+            outcome="SUCCESS",
+            metadata_json={"evidence_ref": body.evidence_ref},
+        )
+    )
+    db.commit()
+    db.refresh(row)
+    return _admin_voice_catalog_payload(row)
+
+
+@router.post("/admin/voice-catalog/{voice_id}/preview")
+async def admin_preview_voice_catalog_entry(
+    voice_id: str,
+    body: AdminVoiceCatalogPreviewRequest,
+    p: Principal = Depends(require_provisioned_superadmin),
+    settings: Settings = Depends(get_settings),
+    db: Session = Depends(get_db),
+):
+    _require_console_superadmin(p, settings)
+    row = db.get(VoiceCatalogEntry, voice_id)
+    if row is None:
+        raise HTTPException(404, "VOICE_CATALOG_ENTRY_NOT_FOUND")
+    if not row.active:
+        raise HTTPException(409, "VOICE_CATALOG_ENTRY_INACTIVE")
+    if body.locale not in set(row.supported_locales or []):
+        raise HTTPException(422, "VOICE_LOCALE_NOT_SUPPORTED")
+    if "MESSAGE_PLAYBACK" not in set(row.delivery_modes or []):
+        raise HTTPException(422, "VOICE_DELIVERY_MODE_NOT_SUPPORTED")
+    profile = VoiceProfile(
+        agent_id="admin-preview",
+        binding_id=f"catalog-preview:{row.id}",
+        binding_version=row.catalog_version,
+        locale=body.locale,
+        provider=row.provider_key,
+        voice_id=row.provider_voice_id,
+        model=row.provider_model,
+        source_type=row.source_type,
+        delivery_mode="MESSAGE_PLAYBACK",
+        provider_profile_version=row.catalog_version,
+    )
+    try:
+        audio = await synthesize_speech(
+            settings,
+            profile,
+            body.text,
+            request_id=f"admin-voice-preview:{row.id}",
+        )
+    except TextToSpeechError as exc:
+        status = 503 if exc.code in {"TTS_DISABLED", "TTS_PROVIDER_UNAVAILABLE"} else 422
+        raise HTTPException(status, exc.code) from exc
+
+    db.add(
+        AuditEvent(
+            tenant_id=p.tenant_id,
+            actor_id=p.user_id,
+            action="ADMIN_VOICE_CATALOG_PREVIEWED",
+            resource_type="voice_catalog_entry",
+            resource_id=row.id,
+            outcome="SUCCESS",
+            metadata_json={
+                "locale": body.locale,
+                "chars": len(body.text),
+            },
+        )
+    )
+    db.commit()
+    return Response(
+        content=audio,
+        media_type="audio/mpeg",
+        headers={
+            "X-Efata-Voice-Catalog-Id": row.id,
+            "X-Efata-Voice-Provider": row.provider_key,
+        },
+    )
+
+
+@router.get("/admin/agent-voice-assignments")
+def admin_agent_voice_assignments(
+    p: Principal = Depends(require_provisioned_superadmin),
+    settings: Settings = Depends(get_settings),
+    db: Session = Depends(get_db),
+):
+    _require_console_superadmin(p, settings)
+    rows = db.execute(
+        select(AgentVoiceAssignment, VoiceCatalogEntry)
+        .join(VoiceCatalogEntry, VoiceCatalogEntry.id == AgentVoiceAssignment.voice_catalog_id)
+        .where(AgentVoiceAssignment.tenant_id == p.tenant_id)
+        .order_by(AgentVoiceAssignment.agent_slug, AgentVoiceAssignment.version.desc())
+    ).all()
+    return [{
+        "id": assignment.id, "agent_slug": assignment.agent_slug, "locale": assignment.locale,
+        "voice_catalog_id": voice.id, "voice_display_name": voice.display_name,
+        "provider_key": voice.provider_key, "assignment_state": assignment.assignment_state,
+        "validation_status": assignment.validation_status, "active": assignment.active,
+        "presentation_label": assignment.presentation_label, "timbre_label": assignment.timbre_label,
+        "energy_label": assignment.energy_label, "version": assignment.version,
+    } for assignment, voice in rows]
+
+
+@router.put("/admin/agents/{agent_slug}/voice-assignment")
+def admin_upsert_agent_voice_assignment(
+    agent_slug: str,
+    body: AdminVoiceAssignmentUpsert,
+    p: Principal = Depends(require_provisioned_superadmin),
+    settings: Settings = Depends(get_settings),
+    db: Session = Depends(get_db),
+):
+    _require_console_superadmin(p, settings)
+    if not any(agent.slug == agent_slug for agent in list_agents()):
+        raise HTTPException(404, "AGENT_NOT_FOUND")
+    voice = db.get(VoiceCatalogEntry, body.voice_catalog_id)
+    if not voice or not voice.active or voice.curation_status != "APPROVED":
+        raise HTTPException(409, "VOICE_NOT_ELIGIBLE")
+    duplicate = db.scalar(select(AgentVoiceAssignment).where(
+        AgentVoiceAssignment.tenant_id == p.tenant_id,
+        AgentVoiceAssignment.voice_catalog_id == voice.id,
+        AgentVoiceAssignment.active.is_(True),
+        AgentVoiceAssignment.agent_slug != agent_slug,
+    ))
+    if duplicate:
+        raise HTTPException(409, "VOICE_ALREADY_ASSIGNED")
+    prior = db.scalar(select(AgentVoiceAssignment).where(
+        AgentVoiceAssignment.tenant_id == p.tenant_id,
+        AgentVoiceAssignment.agent_slug == agent_slug,
+        AgentVoiceAssignment.locale == body.locale,
+        AgentVoiceAssignment.active.is_(True),
+    ))
+    next_version = 1
+    if prior:
+        prior.active = False
+        prior.assignment_state = "DISABLED"
+        prior.updated_by = p.user_id
+        next_version = prior.version + 1
+    assignment = AgentVoiceAssignment(
+        tenant_id=p.tenant_id, agent_slug=agent_slug, voice_catalog_id=voice.id,
+        locale=body.locale, delivery_modes=body.delivery_modes,
+        presentation_label=body.presentation_label, timbre_label=body.timbre_label,
+        energy_label=body.energy_label, assignment_state="DRAFT",
+        validation_status="UNVALIDATED", active=True, version=next_version,
+        created_by=p.user_id, updated_by=p.user_id,
+    )
+    db.add(assignment)
+    db.flush()
+    db.add(AuditEvent(tenant_id=p.tenant_id, actor_id=p.user_id,
+        action="ADMIN_AGENT_VOICE_ASSIGNMENT_DRAFT", resource_type="agent_voice_assignment",
+        resource_id=assignment.id, outcome="SUCCESS", metadata_json={
+            "agent_slug": agent_slug, "voice_catalog_id": voice.id,
+            "assignment_state": "DRAFT", "validation_status": "UNVALIDATED"}))
+    db.commit()
+    return {"id": assignment.id, "agent_slug": assignment.agent_slug,
+        "voice_catalog_id": voice.id, "voice_display_name": voice.display_name,
+        "provider_key": voice.provider_key, "locale": assignment.locale,
+        "delivery_modes": assignment.delivery_modes, "presentation_label": assignment.presentation_label,
+        "timbre_label": assignment.timbre_label, "energy_label": assignment.energy_label,
+        "assignment_state": assignment.assignment_state, "validation_status": assignment.validation_status,
+        "active": assignment.active, "version": assignment.version}
+
+
+def _admin_voice_assignment_payload(
+    assignment: AgentVoiceAssignment,
+    voice: VoiceCatalogEntry,
+) -> dict:
+    return {
+        "id": assignment.id,
+        "agent_slug": assignment.agent_slug,
+        "voice_catalog_id": voice.id,
+        "voice_display_name": voice.display_name,
+        "provider_key": voice.provider_key,
+        "locale": assignment.locale,
+        "delivery_modes": assignment.delivery_modes,
+        "presentation_label": assignment.presentation_label,
+        "timbre_label": assignment.timbre_label,
+        "energy_label": assignment.energy_label,
+        "assignment_state": assignment.assignment_state,
+        "validation_status": assignment.validation_status,
+        "active": assignment.active,
+        "version": assignment.version,
+    }
+
+
+def _tenant_voice_assignment_or_404(
+    db: Session,
+    *,
+    tenant_id: str,
+    assignment_id: str,
+) -> AgentVoiceAssignment:
+    assignment = db.scalar(
+        select(AgentVoiceAssignment).where(
+            AgentVoiceAssignment.id == assignment_id,
+            AgentVoiceAssignment.tenant_id == tenant_id,
+        )
+    )
+    if assignment is None:
+        raise HTTPException(404, "VOICE_ASSIGNMENT_NOT_FOUND")
+    return assignment
+
+
+@router.post("/admin/agent-voice-assignments/{assignment_id}/validation")
+def admin_validate_agent_voice_assignment(
+    assignment_id: str,
+    body: AdminVoiceAssignmentValidationUpdate,
+    p: Principal = Depends(require_provisioned_superadmin),
+    settings: Settings = Depends(get_settings),
+    db: Session = Depends(get_db),
+):
+    _require_console_superadmin(p, settings)
+    assignment = _tenant_voice_assignment_or_404(
+        db,
+        tenant_id=p.tenant_id,
+        assignment_id=assignment_id,
+    )
+    if not assignment.active or assignment.assignment_state != "DRAFT":
+        raise HTTPException(409, "VOICE_ASSIGNMENT_NOT_DRAFT")
+
+    voice = db.get(VoiceCatalogEntry, assignment.voice_catalog_id)
+    if voice is None:
+        raise HTTPException(409, "VOICE_CATALOG_ENTRY_NOT_FOUND")
+
+    if body.validation_status == "VALIDATED":
+        if (
+            not voice.active
+            or voice.curation_status != "APPROVED"
+            or assignment.locale not in set(voice.supported_locales or [])
+            or not set(assignment.delivery_modes or []).issubset(
+                set(voice.delivery_modes or [])
+            )
+        ):
+            raise HTTPException(409, "VOICE_NOT_ELIGIBLE")
+
+    assignment.validation_status = body.validation_status
+    assignment.updated_by = p.user_id
+    db.add(
+        AuditEvent(
+            tenant_id=p.tenant_id,
+            actor_id=p.user_id,
+            action="ADMIN_AGENT_VOICE_ASSIGNMENT_VALIDATION",
+            resource_type="agent_voice_assignment",
+            resource_id=assignment.id,
+            outcome="SUCCESS",
+            metadata_json={
+                "agent_slug": assignment.agent_slug,
+                "voice_catalog_id": voice.id,
+                "validation_status": assignment.validation_status,
+                "evidence_ref": body.evidence_ref,
+            },
+        )
+    )
+    db.commit()
+    return _admin_voice_assignment_payload(assignment, voice)
+
+
+@router.post("/admin/agent-voice-assignments/{assignment_id}/activation")
+def admin_activate_agent_voice_assignment(
+    assignment_id: str,
+    body: AdminVoiceAssignmentActivationRequest,
+    p: Principal = Depends(require_provisioned_superadmin),
+    settings: Settings = Depends(get_settings),
+    db: Session = Depends(get_db),
+):
+    _require_console_superadmin(p, settings)
+    assignment = _tenant_voice_assignment_or_404(
+        db,
+        tenant_id=p.tenant_id,
+        assignment_id=assignment_id,
+    )
+    if not assignment.active or assignment.assignment_state != "DRAFT":
+        raise HTTPException(409, "VOICE_ASSIGNMENT_NOT_DRAFT")
+    if assignment.validation_status != "VALIDATED":
+        raise HTTPException(409, "VOICE_ASSIGNMENT_NOT_VALIDATED")
+
+    voice = db.get(VoiceCatalogEntry, assignment.voice_catalog_id)
+    if (
+        voice is None
+        or not voice.active
+        or voice.curation_status != "APPROVED"
+        or assignment.locale not in set(voice.supported_locales or [])
+        or not set(assignment.delivery_modes or []).issubset(
+            set(voice.delivery_modes or [])
+        )
+    ):
+        raise HTTPException(409, "VOICE_NOT_ELIGIBLE")
+
+    assignment.assignment_state = "ACTIVE"
+    assignment.updated_by = p.user_id
+    db.add(
+        AuditEvent(
+            tenant_id=p.tenant_id,
+            actor_id=p.user_id,
+            action="ADMIN_AGENT_VOICE_ASSIGNMENT_ACTIVATED",
+            resource_type="agent_voice_assignment",
+            resource_id=assignment.id,
+            outcome="SUCCESS",
+            metadata_json={
+                "agent_slug": assignment.agent_slug,
+                "voice_catalog_id": voice.id,
+                "validation_status": assignment.validation_status,
+                "assignment_state": assignment.assignment_state,
+                "evidence_ref": body.evidence_ref,
+            },
+        )
+    )
+    db.commit()
+    return _admin_voice_assignment_payload(assignment, voice)
+
+
+@router.post("/admin/agent-voice-assignments/{assignment_id}/deactivation")
+def admin_deactivate_agent_voice_assignment(
+    assignment_id: str,
+    body: AdminVoiceAssignmentDeactivationRequest,
+    p: Principal = Depends(require_provisioned_superadmin),
+    settings: Settings = Depends(get_settings),
+    db: Session = Depends(get_db),
+):
+    _require_console_superadmin(p, settings)
+    assignment = _tenant_voice_assignment_or_404(
+        db,
+        tenant_id=p.tenant_id,
+        assignment_id=assignment_id,
+    )
+    if not assignment.active or assignment.assignment_state == "DISABLED":
+        raise HTTPException(409, "VOICE_ASSIGNMENT_ALREADY_DISABLED")
+    assignment.active = False
+    assignment.assignment_state = "DISABLED"
+    assignment.updated_by = p.user_id
+    voice = db.get(VoiceCatalogEntry, assignment.voice_catalog_id)
+    if voice is None:
+        raise HTTPException(409, "VOICE_CATALOG_ENTRY_NOT_FOUND")
+    db.add(
+        AuditEvent(
+            tenant_id=p.tenant_id,
+            actor_id=p.user_id,
+            action="ADMIN_AGENT_VOICE_ASSIGNMENT_DEACTIVATED",
+            resource_type="agent_voice_assignment",
+            resource_id=assignment.id,
+            outcome="SUCCESS",
+            metadata_json={
+                "agent_slug": assignment.agent_slug,
+                "evidence_ref": body.evidence_ref,
+            },
+        )
+    )
+    db.commit()
+    db.refresh(assignment)
+    return _admin_voice_assignment_payload(assignment, voice)
+
+
+@router.get("/admin/teams")
+def admin_teams(
+    p: Principal = Depends(require_provisioned_superadmin),
+    settings: Settings = Depends(get_settings),
+):
+    _require_console_superadmin(p, settings)
+    return [team_definition_payload(team, settings) for team in list_team_definitions()]
+
+
+@router.get("/admin/governance")
+def admin_governance(
+    p: Principal = Depends(require_provisioned_superadmin),
+    settings: Settings = Depends(get_settings),
+):
+    _require_console_superadmin(p, settings)
+    return {
+        "tenant_id": p.tenant_id,
+        "environment": settings.environment,
+        "release_sha": settings.release_sha,
+        "access_gate_enabled": settings.access_gate_enabled,
+        "artifacts_enabled": settings.artifacts_enabled,
+        "realtime_streaming_enabled": settings.realtime_streaming_enabled,
+        "voice_enabled": settings.voice_enabled,
+        "llm_primary_provider": settings.llm_primary_provider,
+    }
+
 @router.get("/agents")
 def agents_catalog(
     p: Principal = Depends(require_provisioned_principal),
     settings: Settings = Depends(get_settings),
 ):
-    admin = bool({"admin", "orkio_admin"}.intersection(p.roles))
+    admin = bool({"admin", "orkio_admin", "owner", "superadmin", "platform_owner"}.intersection(p.roles))
     catalog = list_agents()
     if not admin:
         catalog = tuple(agent for agent in catalog if agent.slug.lower() == "orkio")
@@ -284,13 +1131,14 @@ def _effective_agent_target(requested_target: str, p: Principal) -> str:
 INVITE_ALLOWED_ROLES={ThreadRole.owner.value, ThreadRole.moderator.value}
 
 def thread_access(db: Session, thread_id: str, p: Principal) -> tuple[Thread, ThreadParticipant]:
-    thread=db.get(Thread, thread_id)
-    if not thread or thread.tenant_id != p.tenant_id: raise HTTPException(404, "THREAD_NOT_FOUND")
-    member=db.scalar(select(ThreadParticipant).where(
-        ThreadParticipant.thread_id==thread_id, ThreadParticipant.user_id==p.user_id,
-        ThreadParticipant.active.is_(True)))
-    if not member: raise HTTPException(403, "THREAD_ACCESS_DENIED")
-    return thread, member
+    try:
+        decision = require_thread_access(
+            db, thread_id=thread_id, tenant_id=p.tenant_id, user_id=p.user_id
+        )
+    except ThreadAccessPolicyError as exc:
+        raise HTTPException(exc.status_code, exc.code) from exc
+    return decision.thread, decision.participant
+
 
 def _history(
     db: Session,
@@ -299,25 +1147,64 @@ def _history(
     settings: Settings,
     limit: int = 40,
     extra_system_messages: list[dict[str, str]] | None = None,
+    *,
+    participant: ThreadParticipant,
+    user_id: str | None = None,
+    execution_id: str | None = None,
+    agent_id: str | None = None,
+    purpose: str = "chat",
 ) -> list[dict]:
-    rows=db.scalars(select(Message).where(Message.thread_id==thread_id,Message.tenant_id==tenant_id)
-                    .order_by(Message.created_at.desc()).limit(limit)).all()
+    rows = visible_messages(
+        db, thread_id=thread_id, tenant_id=tenant_id,
+        participant=participant, limit=limit, newest_first=True,
+    )
     ordered=list(reversed(rows))
-    history=[history_item(m) for m in ordered]
+    projection=project_direct_history(
+        ordered,
+        turn_owner_agent_id=agent_id,
+    )
+    history=list(projection.messages)
+    history_policy_logger.info(
+        "DIRECT_HISTORY_PROJECTED tenant_id=%s thread_id=%s owner_agent_id=%s policy=%s "
+        "user_count=%s owner_assistant_count=%s cross_agent_context_count=%s cross_agent_ids=%s",
+        tenant_id,
+        thread_id,
+        (agent_id or "").strip(),
+        DIRECT_HISTORY_POLICY_VERSION,
+        projection.user_count,
+        projection.owner_assistant_count,
+        projection.cross_agent_context_count,
+        ",".join(projection.cross_agent_ids),
+    )
     latest_user_content=next(
         (str(m.content or "") for m in reversed(ordered) if m.author_type=="user"),
         "",
     )
-    knowledge=platform_knowledge_message(latest_user_content)
+    system_guard=system_capability_guard_message(latest_user_content)
     context=document_context_message(
         db,
         settings=settings,
         tenant_id=tenant_id,
         thread_id=thread_id,
+        query_text=latest_user_content,
     )
     system_messages=list(extra_system_messages or [])
-    if knowledge:
-        system_messages.append(knowledge)
+    if system_guard:
+        system_messages.append(system_guard)
+    if user_id and execution_id:
+        system_messages.extend(
+            knowledge_context_messages(
+                db,
+                settings=settings,
+                tenant_id=tenant_id,
+                user_id=user_id,
+                purpose=purpose,
+                execution_id=execution_id,
+                thread_id=thread_id,
+                agent_id=agent_id,
+                query_text=latest_user_content,
+            )
+        )
     if context:
         system_messages.append(context)
     persisted_artifacts = artifact_context_message(
@@ -333,7 +1220,7 @@ def _history(
 def health(settings: Settings=Depends(get_settings)):
     return {"status":"ok","release":"2.0.0a1","sha":settings.release_sha,"environment":settings.environment}
 
-EXPECTED_MIGRATION_HEAD = "003_native_auth"
+EXPECTED_MIGRATION_HEAD = "013_agent_studio_control_plane"
 
 
 @router.get("/ready")
@@ -480,24 +1367,54 @@ def tool_capabilities(
 async def tool_python_execute(
     payload: PythonExecuteRequest,
     p: Principal = Depends(require_provisioned_admin),
+    db: Session = Depends(get_db),
 ):
     try:
         policy = CapabilityPolicy.from_env()
-        result = await execute_python(payload.code, policy)
-    except (CapabilityPolicyError, PythonToolError) as exc:
-        code = exc.args[0] if exc.args else getattr(exc, "code", "PYTHON_TOOL_ERROR")
-        status = 403 if "DISABLED" in code or "FORBIDDEN" in code else 422
+        result = await execute_python_runtime(
+            code=payload.code,
+            policy=policy,
+            context=PythonRuntimeContext(
+                tenant_id=p.tenant_id,
+                user_id=p.user_id,
+            ),
+            db=db,
+        )
+    except (CapabilityPolicyError, PythonToolError, PythonRuntimeError) as exc:
+        code = exc.args[0] if exc.args else getattr(exc, "code", "PYTHON_RUNTIME_ERROR")
+        if "DISABLED" in code or "FORBIDDEN" in code:
+            status = 403
+        elif "UNAVAILABLE" in code:
+            status = 503
+        else:
+            status = 422
         raise HTTPException(status, detail={"code": code}) from exc
     return {
+        "execution_id": result.execution_id,
+        "sandbox_execution_id": result.sandbox_execution_id,
+        "status": result.status,
         "code_sha256": result.code_sha256,
+        "runtime": result.sandbox_provider,
+        "runtime_profile_id": result.runtime_profile_id,
+        "runtime_profile_digest": result.runtime_profile_digest,
         "stdout": result.stdout,
         "stderr": result.stderr,
         "exit_code": result.exit_code,
         "duration_ms": result.duration_ms,
         "truncated": result.truncated,
-        "network": False,
-        "filesystem": False,
-        "proposal_only": True,
+        "network_policy": result.network_policy,
+        "network_policy_enforced": result.network_policy_enforced,
+        "filesystem_isolation_enforced": result.filesystem_isolation_enforced,
+        "cpu_limit_enforced": result.cpu_limit_enforced,
+        "memory_limit_enforced": result.memory_limit_enforced,
+        "process_limit_enforced": result.process_limit_enforced,
+        "ephemeral_filesystem_enforced": result.ephemeral_filesystem_enforced,
+        "no_operational_secrets": result.no_operational_secrets,
+        "attestation": result.attestation,
+        "audit_ref": result.audit_ref,
+        "execution_performed": result.execution_performed,
+        "external_write": False,
+        "proposal_only": False,
     }
 
 
@@ -580,11 +1497,34 @@ def list_threads(p: Principal=Depends(require_provisioned_principal), db: Sessio
 
 @router.get("/threads/{thread_id}/messages")
 def list_messages(thread_id: str,p:Principal=Depends(require_provisioned_principal),db:Session=Depends(get_db)):
-    thread_access(db,thread_id,p)
-    rows=db.scalars(select(Message).where(Message.thread_id==thread_id,Message.tenant_id==p.tenant_id).order_by(Message.created_at)).all()
+    # Canonical access governs the history scope; never infer display names
+    # across tenants or threads, even if a global user ID is present.
+    _, member = thread_access(db, thread_id, p)
+    rows = visible_messages(
+        db, thread_id=thread_id, tenant_id=p.tenant_id, participant=member,
+    )
+    human_author_ids = {
+        m.author_id for m in rows if m.author_type == "user" and m.author_id
+    }
+    human_names = {}
+    if human_author_ids:
+        human_names = dict(
+            db.execute(
+                select(User.id, User.display_name)
+                .join(ThreadParticipant, ThreadParticipant.user_id == User.id)
+                .where(
+                    ThreadParticipant.tenant_id == p.tenant_id,
+                    ThreadParticipant.thread_id == thread_id,
+                    ThreadParticipant.user_id.in_(human_author_ids),
+                )
+            ).all()
+        )
     return [{
         "id":m.id,
         "author_type":m.author_type,
+        "author_id":m.author_id if m.author_type == "user" and m.author_id in human_names else None,
+        "user_id":m.author_id if m.author_type == "user" and m.author_id in human_names else None,
+        "author_display_name":human_names.get(m.author_id) if m.author_type == "user" else None,
         "agent_id":m.author_id if m.author_type=="agent" else None,
         "agent_name":m.agent_name,
         "content":m.content,
@@ -608,36 +1548,123 @@ async def send_message(thread_id:str,payload:MessageCreate,p:Principal=Depends(r
         requested_target=effective_agent,
         channel=RuntimeChannel.CHAT_JSON,
     )
+    audit_candidate, audit_invocation_message, natural_audit_binding = _resolve_audit_request(
+        payload.content,
+        resolved_agent_id=turn.resolved_agent_id,
+    )
+    if audit_candidate:
+        _audit_trace_turn(
+            "natural_request_received" if natural_audit_binding is not None else "directive_received",
+            turn=turn,
+            settings=settings,
+            capability_id=(
+                natural_audit_binding.required_capability_id
+                if natural_audit_binding is not None
+                else None
+            ),
+            operation=(
+                natural_audit_binding.intent
+                if natural_audit_binding is not None
+                else None
+            ),
+            status="accepted",
+        )
     observer=ExecutionObserver.from_turn(turn,execution_engine=execution.execution_engine.value)
     observer.start()
     try:
         llm.ensure_configured(settings)
+    except (GitHubIntegrationError, asyncio.TimeoutError) as exc:
+        observer.fail("GITHUB_TOOL_FAILED")
+        raise HTTPException(503, "GITHUB_TOOL_FAILED") from exc
     except llm.LLMNotConfigured:
         observer.fail("LLM_NOT_CONFIGURED")
         raise HTTPException(503,"LLM_NOT_CONFIGURED")
 
     user=Message(tenant_id=p.tenant_id,thread_id=thread_id,author_type="user",author_id=p.user_id,content=payload.content)
     db.add(user); db.commit()
+
+    audit_outcome: AuditInvocationOutcome | None = None
+    if audit_candidate:
+        if natural_audit_binding is not None and not natural_audit_binding.executable:
+            code = natural_audit_binding.error_code or "CAPABILITY_UNAVAILABLE"
+            observer.fail(code)
+            _audit_trace_turn(
+                "natural_request_unavailable",
+                turn=turn,
+                settings=settings,
+                capability_id=natural_audit_binding.required_capability_id,
+                operation=natural_audit_binding.intent,
+                status="failed",
+                error_code=code,
+            )
+            raise _natural_audit_http_error(natural_audit_binding)
+        try:
+            audit_outcome = _audit_invocation_service(db, settings).invoke_if_directive(
+                message=audit_invocation_message or payload.content,
+                turn=turn,
+                principal_roles=p.roles,
+            )
+        except AuditInvocationError as exc:
+            observer.fail(exc.code)
+            raise HTTPException(exc.http_status, detail=_audit_error_detail(exc)) from exc
+
     hyper_surface = execution.resolved_target == "orkio"
     profile = (
         profile_for(db, tenant_id=p.tenant_id, user_id=p.user_id)
         if hyper_surface
         else None
     )
-    github_messages = await github_context_messages(
-        settings,
-        message=payload.content,
-        is_admin=is_allowlisted_admin(p, settings),
-    )
-    capability_messages = await runtime_capability_messages(
-        message=payload.content,
-        roles=p.roles,
-    )
-    runtime_system_messages = list(github_messages) + list(capability_messages)
+    if audit_candidate:
+        logging.getLogger("orkio.self_knowledge").info(
+            "self_knowledge.github_bypassed execution_id=%s reason=governed_audit",
+            turn.execution_id,
+        )
+        # Governed audit V1 is a single-capability, network=false path. Do not
+        # run GitHub/Python/external-read side paths for the same directive.
+        github_messages = []
+        capability_messages = []
+        runtime_system_messages = (
+            [audit_outcome.system_message()] if audit_outcome is not None else []
+        )
+        if audit_outcome is not None:
+            _audit_trace_turn(
+                "evidence_attached_to_turn",
+                turn=turn,
+                settings=settings,
+                capability_id=audit_outcome.capability_id,
+                operation=audit_outcome.operation,
+                audit_execution_id=audit_outcome.audit_execution_id,
+                status=audit_outcome.status,
+            )
+    else:
+        github_messages = await github_context_messages(
+            settings,
+            message=payload.content,
+            is_admin=is_allowlisted_admin(p, settings),
+            execution_id=turn.execution_id,
+        )
+        capability_messages = await runtime_capability_messages(
+            message=payload.content,
+            roles=p.roles,
+            tenant_id=p.tenant_id,
+            user_id=p.user_id,
+            thread_id=thread_id,
+            agent_id=turn.turn_owner_agent_id,
+            request_id=turn.execution_id,
+            db=db,
+        )
+        runtime_system_messages = list(github_messages) + list(capability_messages)
     if hyper_surface:
         runtime_system_messages.insert(
             0,
             hyper_cocreator_system_message(
+                co_creator_name=profile.co_creator_name if profile else None,
+                onboarding_goal=profile.onboarding_goal if profile else None,
+            ),
+        )
+        runtime_system_messages.insert(
+            1,
+            hyper_cocreator_profile_message(
                 co_creator_name=profile.co_creator_name if profile else None,
                 onboarding_goal=profile.onboarding_goal if profile else None,
             ),
@@ -648,21 +1675,51 @@ async def send_message(thread_id:str,payload:MessageCreate,p:Principal=Depends(r
         p.tenant_id,
         settings,
         extra_system_messages=runtime_system_messages,
+        participant=member,
+        user_id=p.user_id,
+        execution_id=turn.execution_id,
+        agent_id=turn.turn_owner_agent_id,
+        purpose="chat",
     )
 
     try:
+        if settings.github_agent_tools_enabled and not audit_candidate:
+            history = await prepare_github_tool_history(
+                settings, execution.resolved_target, history,
+                tenant_id=p.tenant_id, user_id=p.user_id,
+                execution_id=turn.execution_id,
+                is_admin=is_allowlisted_admin(p, settings),
+            )
         answer=await llm.generate(settings,execution.resolved_target,history)
+    except (GitHubIntegrationError, asyncio.TimeoutError):
+        observer.fail("GITHUB_TOOL_FAILED")
+        raise HTTPException(502, "GITHUB_TOOL_FAILED")
     except llm.LLMNotConfigured:
         observer.fail("LLM_NOT_CONFIGURED")
         raise HTTPException(503,"LLM_NOT_CONFIGURED")
-    except llm.LLMUpstreamError:
+    except llm.LLMUpstreamError as exc:
         observer.fail("LLM_UPSTREAM_ERROR")
+        llm_runtime_logger.error(
+            "LLM_PROVIDER_FAILURE %s",
+            json.dumps(
+                {
+                    "request_id": turn.request_id,
+                    "execution_id": turn.execution_id,
+                    "tenant_id": turn.tenant_id,
+                    "thread_id": turn.thread_id,
+                    "agent_id": turn.turn_owner_agent_id,
+                    "route_family": turn.route_family.value,
+                    **exc.diagnostic(),
+                },
+                sort_keys=True,
+            ),
+        )
         raise HTTPException(502,"LLM_UPSTREAM_ERROR")
 
     assistant,envelope=persist_agent_response(db,turn=turn,content=answer)
     observer.persisted(message_id=assistant.id)
     observer.complete()
-    return {
+    response_payload = {
         "message_id":assistant.id,
         "execution_id":turn.execution_id,
         "agent_id":envelope.agent_id,
@@ -684,6 +1741,9 @@ async def send_message(thread_id:str,payload:MessageCreate,p:Principal=Depends(r
         },
         "response":envelope_payload(envelope),
     }
+    if audit_outcome is not None:
+        response_payload["audit"] = audit_outcome.reference()
+    return response_payload
 
 @router.post("/threads/{thread_id}/stream")
 async def stream_message(thread_id:str,payload:MessageCreate,p:Principal=Depends(require_provisioned_principal),
@@ -709,6 +1769,27 @@ async def stream_message(thread_id:str,payload:MessageCreate,p:Principal=Depends
         requested_target=effective_agent,
         channel=RuntimeChannel.CHAT_SSE,
     )
+    audit_candidate, audit_invocation_message, natural_audit_binding = _resolve_audit_request(
+        payload.content,
+        resolved_agent_id=turn.resolved_agent_id,
+    )
+    if audit_candidate:
+        _audit_trace_turn(
+            "natural_request_received" if natural_audit_binding is not None else "directive_received",
+            turn=turn,
+            settings=settings,
+            capability_id=(
+                natural_audit_binding.required_capability_id
+                if natural_audit_binding is not None
+                else None
+            ),
+            operation=(
+                natural_audit_binding.intent
+                if natural_audit_binding is not None
+                else None
+            ),
+            status="accepted",
+        )
 
     internal_contributions = ()
     internal_consultation_plans = ()
@@ -721,7 +1802,7 @@ async def stream_message(thread_id:str,payload:MessageCreate,p:Principal=Depends
     agent=execution.resolved_target
     tenant_id=p.tenant_id
     user_id=p.user_id
-    artifact_intent=detect_artifact_intent(payload.content)
+    artifact_intent=None if audit_candidate else detect_artifact_intent(payload.content)
     artifact_allowed=bool(
         artifact_intent
         and settings.artifacts_enabled
@@ -749,24 +1830,66 @@ async def stream_message(thread_id:str,payload:MessageCreate,p:Principal=Depends
             ),
         )
 
+    audit_outcome: AuditInvocationOutcome | None = None
+    audit_error: AuditInvocationError | None = None
     if configured:
         db.add(Message(tenant_id=tenant_id,thread_id=thread_id,author_type="user",author_id=user_id,content=payload.content))
         db.commit()
+        if audit_candidate:
+            if natural_audit_binding is not None and not natural_audit_binding.executable:
+                code = natural_audit_binding.error_code or "CAPABILITY_UNAVAILABLE"
+                audit_error = AuditInvocationError(
+                    code,
+                    http_status=(501 if code == "CAPABILITY_UNAVAILABLE" else 400),
+                )
+                _audit_trace_turn(
+                    "natural_request_unavailable",
+                    turn=turn,
+                    settings=settings,
+                    capability_id=natural_audit_binding.required_capability_id,
+                    operation=natural_audit_binding.intent,
+                    status="failed",
+                    error_code=code,
+                )
+            else:
+                try:
+                    audit_outcome = _audit_invocation_service(db, settings).invoke_if_directive(
+                        message=audit_invocation_message or payload.content,
+                        turn=turn,
+                        principal_roles=p.roles,
+                    )
+                except AuditInvocationError as exc:
+                    audit_error = exc
         hyper_surface = execution.resolved_target == "orkio"
         profile = (
             profile_for(db, tenant_id=tenant_id, user_id=user_id)
             if hyper_surface
             else None
         )
-        github_messages = await github_context_messages(
-            settings,
-            message=payload.content,
-            is_admin=is_allowlisted_admin(p, settings),
-        )
-        capability_messages = await runtime_capability_messages(
-            message=payload.content,
-            roles=p.roles,
-        )
+        if audit_candidate:
+            logging.getLogger("orkio.self_knowledge").info(
+                "self_knowledge.github_bypassed execution_id=%s reason=governed_audit",
+                turn.execution_id,
+            )
+            github_messages = []
+            capability_messages = []
+        else:
+            github_messages = await github_context_messages(
+                settings,
+                message=payload.content,
+                is_admin=is_allowlisted_admin(p, settings),
+                execution_id=turn.execution_id,
+            )
+            capability_messages = await runtime_capability_messages(
+                message=payload.content,
+                roles=p.roles,
+                tenant_id=p.tenant_id,
+                user_id=p.user_id,
+                thread_id=thread_id,
+                agent_id=turn.turn_owner_agent_id,
+                request_id=turn.execution_id,
+                db=db,
+            )
         if hyper_surface and settings.internal_agent_consultation_enabled:
             try:
                 internal_contributions, internal_consultation_plans = (
@@ -787,10 +1910,28 @@ async def stream_message(thread_id:str,payload:MessageCreate,p:Principal=Depends
             + internal_contribution_messages(internal_contributions)
             + list(capability_messages)
         )
+        if audit_outcome is not None:
+            runtime_system_messages.append(audit_outcome.system_message())
+            _audit_trace_turn(
+                "evidence_attached_to_turn",
+                turn=turn,
+                settings=settings,
+                capability_id=audit_outcome.capability_id,
+                operation=audit_outcome.operation,
+                audit_execution_id=audit_outcome.audit_execution_id,
+                status=audit_outcome.status,
+            )
         if hyper_surface:
             runtime_system_messages.insert(
                 0,
                 hyper_cocreator_system_message(
+                    co_creator_name=profile.co_creator_name if profile else None,
+                    onboarding_goal=profile.onboarding_goal if profile else None,
+                ),
+            )
+            runtime_system_messages.insert(
+                1,
+                hyper_cocreator_profile_message(
                     co_creator_name=profile.co_creator_name if profile else None,
                     onboarding_goal=profile.onboarding_goal if profile else None,
                 ),
@@ -805,6 +1946,11 @@ async def stream_message(thread_id:str,payload:MessageCreate,p:Principal=Depends
             tenant_id,
             settings,
             extra_system_messages=runtime_system_messages,
+            participant=member,
+            user_id=user_id,
+            execution_id=turn.execution_id,
+            agent_id=turn.turn_owner_agent_id,
+            purpose="chat",
         )
     else:
         history=[]
@@ -853,6 +1999,36 @@ async def stream_message(thread_id:str,payload:MessageCreate,p:Principal=Depends
             yield sse_event(terminal(RuntimeEventType.DONE,status="failed"))
             return
 
+        if audit_error is not None:
+            observer.fail(audit_error.code)
+            error_data: dict[str, object] = {"code": audit_error.code}
+            audit_ref = audit_error.audit_reference or {}
+            if audit_error.audit_reference is not None:
+                error_data["audit"] = audit_error.audit_reference
+            yield sse_event(event(RuntimeEventType.ERROR, **error_data))
+            _audit_trace_turn(
+                "sse_terminal",
+                turn=turn,
+                settings=settings,
+                capability_id=(
+                    str(audit_ref.get("capability_id"))
+                    if audit_ref.get("capability_id") is not None
+                    else None
+                ),
+                audit_execution_id=(
+                    str(audit_ref.get("audit_execution_id"))
+                    if audit_ref.get("audit_execution_id") is not None
+                    else None
+                ),
+                status="failed",
+                error_code=audit_error.code,
+            )
+            yield sse_event(terminal(RuntimeEventType.DONE,status="failed"))
+            return
+
+        status_data: dict[str, object] = {}
+        if audit_outcome is not None:
+            status_data["audit"] = audit_outcome.reference()
         yield sse_event(event(
             RuntimeEventType.STATUS,
             status="started",
@@ -861,19 +2037,62 @@ async def stream_message(thread_id:str,payload:MessageCreate,p:Principal=Depends
             ownership_locked=turn.ownership_locked,
             chat_availability=availability.chat.status.value,
             internal_consultation=bool(internal_contributions),
+            **status_data,
         ))
         parts:list[str]=[]
+        tool_history = history
         try:
-            async for piece in llm.stream(settings,agent,history):
+            if settings.github_agent_tools_enabled and not audit_candidate:
+                tool_history = await prepare_github_tool_history(
+                    settings, agent, history,
+                    tenant_id=tenant_id, user_id=user_id,
+                    execution_id=turn.execution_id,
+                    is_admin=is_allowlisted_admin(p, settings),
+                )
+            async for piece in llm.stream(settings,agent,tool_history):
                 parts.append(piece)
                 yield sse_event(event(RuntimeEventType.CHUNK,text=piece))
+        except (GitHubIntegrationError, asyncio.TimeoutError):
+            observer.fail("GITHUB_TOOL_FAILED")
+            yield sse_event(event(RuntimeEventType.ERROR,code="GITHUB_TOOL_FAILED"))
+            yield sse_event(terminal(RuntimeEventType.DONE,status="failed"))
+            return
         except llm.LLMNotConfigured:
             observer.fail("LLM_NOT_CONFIGURED")
             yield sse_event(event(RuntimeEventType.ERROR,code="LLM_NOT_CONFIGURED"))
             yield sse_event(terminal(RuntimeEventType.DONE,status="failed"))
             return
-        except Exception:
+        except llm.LLMUpstreamError as exc:
             observer.fail("LLM_UPSTREAM_ERROR")
+            llm_runtime_logger.error(
+                "LLM_PROVIDER_FAILURE %s",
+                json.dumps(
+                    {
+                        "request_id": turn.request_id,
+                        "execution_id": turn.execution_id,
+                        "tenant_id": turn.tenant_id,
+                        "thread_id": turn.thread_id,
+                        "agent_id": turn.turn_owner_agent_id,
+                        "route_family": turn.route_family.value,
+                        **exc.diagnostic(),
+                    },
+                    sort_keys=True,
+                ),
+            )
+            yield sse_event(event(RuntimeEventType.ERROR,code="LLM_UPSTREAM_ERROR"))
+            yield sse_event(terminal(RuntimeEventType.DONE,status="failed"))
+            return
+        except Exception as exc:
+            observer.fail("LLM_UPSTREAM_ERROR")
+            llm_runtime_logger.exception(
+                "LLM_RUNTIME_FAILURE request_id=%s execution_id=%s tenant_id=%s thread_id=%s agent_id=%s exception_type=%s",
+                turn.request_id,
+                turn.execution_id,
+                turn.tenant_id,
+                turn.thread_id,
+                turn.turn_owner_agent_id,
+                type(exc).__name__,
+            )
             yield sse_event(event(RuntimeEventType.ERROR,code="LLM_UPSTREAM_ERROR"))
             yield sse_event(terminal(RuntimeEventType.DONE,status="failed"))
             return
@@ -968,10 +2187,22 @@ async def stream_message(thread_id:str,payload:MessageCreate,p:Principal=Depends
             ownership_locked=execution.ownership_locked,
             response=envelope_payload(envelope),
         )
+        if audit_outcome is not None:
+            done_payload["audit"] = audit_outcome.reference()
         if generated_artifact is not None:
             done_payload["artifact"]=artifact_payload(generated_artifact)
         if artifact_error_code is not None:
             done_payload["artifact_error"] = artifact_error_code
+        if audit_outcome is not None:
+            _audit_trace_turn(
+                "sse_terminal",
+                turn=turn,
+                settings=settings,
+                capability_id=audit_outcome.capability_id,
+                operation=audit_outcome.operation,
+                audit_execution_id=audit_outcome.audit_execution_id,
+                status="completed",
+            )
         yield sse_event(terminal(RuntimeEventType.DONE, **done_payload))
 
     return StreamingResponse(events(),media_type="text/event-stream",
@@ -998,6 +2229,170 @@ def participants(thread_id:str,p:Principal=Depends(require_provisioned_principal
     rows=db.scalars(select(ThreadParticipant).where(ThreadParticipant.thread_id==thread_id,ThreadParticipant.active.is_(True))).all()
     return [{"id":x.id,"user_id":x.user_id,"role":x.thread_role,"membership_type":x.membership_type} for x in rows]
 
+_THREAD_DOCUMENT_ALLOWED_MIME = {
+    "application/pdf",
+    "text/plain",
+    "text/csv",
+    "text/markdown",
+    "application/json",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+}
+_THREAD_DOCUMENT_SUFFIX_MIME = {
+    ".pdf": "application/pdf",
+    ".txt": "text/plain",
+    ".csv": "text/csv",
+    ".md": "text/markdown",
+    ".markdown": "text/markdown",
+    ".json": "application/json",
+    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+}
+
+
+def _resolve_thread_document_upload_identity(file: UploadFile) -> tuple[str, str]:
+    safe = PurePosixPath((file.filename or "file").replace("\\", "/")).name
+    if not safe or safe in {".", ".."} or "\x00" in safe:
+        raise HTTPException(400, "FILENAME_INVALID")
+    mime_type = (
+        file.content_type
+        if file.content_type in _THREAD_DOCUMENT_ALLOWED_MIME
+        else _THREAD_DOCUMENT_SUFFIX_MIME.get(Path(safe).suffix.lower(), file.content_type)
+    )
+    if mime_type not in _THREAD_DOCUMENT_ALLOWED_MIME:
+        raise HTTPException(415, "MIME_TYPE_NOT_ALLOWED")
+    return safe, str(mime_type)
+
+
+@router.get("/document-intake/capabilities")
+def document_intake_capabilities(
+    p: Principal = Depends(require_provisioned_principal),
+    settings: Settings = Depends(get_settings),
+):
+    del p
+    thread_context_enabled = bool(
+        settings.artifacts_enabled
+        and settings.unified_document_intake_enabled
+        and settings.document_context_enabled
+    )
+    return {
+        "large_paste": {
+            "supported": True,
+            "enabled": thread_context_enabled,
+            "threshold_chars": int(settings.document_intake_large_paste_threshold_chars),
+            "max_chars": int(settings.document_intake_large_paste_max_chars),
+            "max_bytes": int(settings.document_intake_large_paste_max_bytes),
+            "canonical_format": "text/markdown",
+            "context_mode": "selective",
+            "requires_explicit_confirmation": True,
+        },
+        "large_file": {
+            "supported": True,
+            "enabled": bool(
+                thread_context_enabled
+                and settings.large_document_pipeline_enabled
+            ),
+            "threshold_bytes": int(settings.max_upload_bytes),
+            "max_bytes": int(settings.knowledge_large_document_max_upload_bytes),
+            "canonical_format": "text/markdown",
+            "context_mode": "selective",
+            "requires_explicit_confirmation": False,
+        },
+    }
+
+
+@router.post("/threads/{thread_id}/document-intake/paste")
+def intake_large_paste(
+    thread_id: str,
+    payload: LargePasteIntakeRequest,
+    p: Principal = Depends(require_provisioned_principal),
+    settings: Settings = Depends(get_settings),
+    db: Session = Depends(get_db),
+):
+    if not settings.artifacts_enabled:
+        raise HTTPException(403, "ARTIFACTS_DISABLED")
+    _, member = thread_access(db, thread_id, p)
+    if member.thread_role == ThreadRole.viewer.value:
+        raise HTTPException(403, "THREAD_READ_ONLY")
+    if not member.can_upload_files:
+        raise HTTPException(403, "UPLOAD_PERMISSION_REQUIRED")
+    try:
+        result = ingest_large_paste(
+            db,
+            settings=settings,
+            principal=p,
+            thread_id=thread_id,
+            content=payload.content,
+            title=payload.title,
+        )
+    except UnifiedDocumentIntakeError as exc:
+        raise HTTPException(exc.status_code, exc.code) from exc
+    return {
+        "intake_status": "ready",
+        "document_reference": result.attachment.id,
+        "attachment_id": result.attachment.id,
+        "filename": result.attachment.filename,
+        "source_kind": "LARGE_PASTE",
+        "source_sha256": result.source_sha256,
+        "source_chars": result.source_chars,
+        "canonical_sha256": result.canonical_sha256,
+        "canonical_chars": result.canonical_chars,
+        "sections": result.sections,
+        "chunks": result.chunks,
+        "context_mode": "selective",
+        "reused": result.reused,
+    }
+
+
+@router.post("/threads/{thread_id}/document-intake/file")
+async def intake_large_file_upload(
+    thread_id: str,
+    file: UploadFile = File(...),
+    p: Principal = Depends(require_provisioned_principal),
+    settings: Settings = Depends(get_settings),
+    db: Session = Depends(get_db),
+):
+    if not settings.artifacts_enabled:
+        raise HTTPException(403, "ARTIFACTS_DISABLED")
+    _, member = thread_access(db, thread_id, p)
+    if member.thread_role == ThreadRole.viewer.value:
+        raise HTTPException(403, "THREAD_READ_ONLY")
+    if not member.can_upload_files:
+        raise HTTPException(403, "UPLOAD_PERMISSION_REQUIRED")
+    safe, mime_type = _resolve_thread_document_upload_identity(file)
+    try:
+        result = await ingest_large_file(
+            db,
+            settings=settings,
+            principal=p,
+            thread_id=thread_id,
+            file=file,
+            filename=safe,
+            mime_type=mime_type,
+        )
+    except UnifiedDocumentIntakeError as exc:
+        raise HTTPException(exc.status_code, exc.code) from exc
+    return {
+        "intake_status": "ready",
+        "document_reference": result.attachment.id,
+        "attachment_id": result.attachment.id,
+        "filename": result.source_filename,
+        "canonical_filename": result.attachment.filename,
+        "source_kind": "LARGE_FILE",
+        "source_sha256": result.source_sha256,
+        "source_size_bytes": result.source_size_bytes,
+        "source_chars": result.source_chars,
+        "canonical_sha256": result.canonical_sha256,
+        "canonical_chars": result.canonical_chars,
+        "sections": result.sections,
+        "chunks": result.chunks,
+        "context_mode": "selective",
+        "reused": result.reused,
+    }
+
+
 @router.post("/threads/{thread_id}/attachments")
 async def upload_attachment(thread_id:str,file:UploadFile=File(...),p:Principal=Depends(require_provisioned_principal),
                             settings:Settings=Depends(get_settings),db:Session=Depends(get_db)):
@@ -1007,26 +2402,8 @@ async def upload_attachment(thread_id:str,file:UploadFile=File(...),p:Principal=
     if not member.can_upload_files: raise HTTPException(403,"UPLOAD_PERMISSION_REQUIRED")
     data=await file.read(settings.max_upload_bytes+1)
     if len(data)>settings.max_upload_bytes: raise HTTPException(413,"FILE_TOO_LARGE")
-    allowed={"application/pdf","text/plain","text/csv","text/markdown","application/json",
-             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-             "application/vnd.openxmlformats-officedocument.presentationml.presentation"}
     digest=hashlib.sha256(data).hexdigest()
-    safe=PurePosixPath((file.filename or "file").replace("\\","/")).name
-    if not safe or safe in {".",".."}: raise HTTPException(400,"FILENAME_INVALID")
-    suffix_mimes={
-        ".pdf":"application/pdf",
-        ".txt":"text/plain",
-        ".csv":"text/csv",
-        ".md":"text/markdown",
-        ".markdown":"text/markdown",
-        ".json":"application/json",
-        ".docx":"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        ".xlsx":"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        ".pptx":"application/vnd.openxmlformats-officedocument.presentationml.presentation",
-    }
-    mime_type=file.content_type if file.content_type in allowed else suffix_mimes.get(Path(safe).suffix.lower(), file.content_type)
-    if mime_type not in allowed: raise HTTPException(415,"MIME_TYPE_NOT_ALLOWED")
+    safe,mime_type=_resolve_thread_document_upload_identity(file)
     key=f"{p.tenant_id}/{thread_id}/{digest}-{safe}"
     root=Path(settings.artifact_storage_path).resolve()
     target=(root/key).resolve()
@@ -1114,6 +2491,15 @@ def document_context_provenance(
             for item in prov.source_provenance
         ],
     }
+
+@router.get("/artifacts/capabilities")
+def artifact_capabilities(
+    p: Principal = Depends(require_provisioned_principal),
+    settings: Settings = Depends(get_settings),
+):
+    del p
+    return artifact_capability_manifest(settings)
+
 
 @router.get("/threads/{thread_id}/artifacts")
 def list_artifacts(
