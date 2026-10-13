@@ -6,6 +6,7 @@ import { V37Immersive } from "../landing/V37Immersive";
 import { premiumMarkup } from "../landing/premiumMarkup";
 import { mountPremiumLanding } from "../landing/premiumInteractions";
 import "../landing/premium.css";
+import { PublicSalesDrawer } from "../features/public-sales/PublicSalesDrawer";
 
 export default function Landing() {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -40,6 +41,7 @@ export default function Landing() {
   return (
     <>
       <V37Immersive onPrivateAccess={() => navigate("/access")} />
+      <PublicSalesDrawer />
       <div
         ref={rootRef}
         className="patroai-premium"

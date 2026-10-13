@@ -1,0 +1,111 @@
+/* B1.1 — isolated editorial drawer; no changes to V37 or private console. */
+.b11-public-entry {
+  position: fixed;
+  z-index: 80;
+  right: max(18px, env(safe-area-inset-right, 0px));
+  bottom: max(22px, env(safe-area-inset-bottom, 0px));
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  max-width: calc(100vw - 32px);
+  padding: 12px 18px;
+  border: 1px solid rgba(55,197,255,.55);
+  border-radius: 999px;
+  background: #111e2b;
+  color: #f5f7fa;
+  font: 600 14px/1.3 Inter, system-ui, sans-serif;
+  box-shadow: 0 12px 44px rgba(0,0,0,.55);
+  cursor: pointer;
+}
+.b11-public-entry:hover,
+.b11-public-entry:focus-visible { outline: 2px solid #37c5ff; outline-offset: 2px; }
+body.v37-immersive-open .b11-public-entry { display: none; }
+.b11-public-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 11000;
+  display: flex;
+  justify-content: flex-end;
+  isolation: isolate;
+}
+.b11-public-backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  border: none;
+  background: rgba(4,9,15,.72);
+  cursor: pointer;
+}
+.b11-public-drawer {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: min(460px, 100%);
+  height: 100dvh;
+  max-height: 100dvh;
+  padding: max(20px, env(safe-area-inset-top, 0px))
+    max(18px, env(safe-area-inset-right, 0px))
+    max(16px, env(safe-area-inset-bottom, 0px))
+    max(18px, env(safe-area-inset-left, 0px));
+  border-left: 1px solid rgba(55,197,255,.25);
+  background: #0b0f14;
+  color: #f5f7fa;
+  box-shadow: -20px 0 80px rgba(0,0,0,.45);
+  font: 400 15px/1.5 Inter, system-ui, sans-serif;
+}
+.b11-public-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; }
+.b11-public-eyebrow { font-size: 10px; letter-spacing: .16em; color: #37c5ff; font-weight: 700; }
+.b11-public-header h2 { font: 700 clamp(19px, 4.5vw, 25px)/1.15 "Exo 2", Inter, sans-serif; margin: 9px 0 0; }
+.b11-public-close {
+  flex: 0 0 44px; width: 44px; height: 44px;
+  border: 1px solid #344755; border-radius: 12px;
+  background: #172331; color: #fff; font-size: 26px; cursor: pointer;
+}
+.b11-public-intro { margin: 18px 0 12px; color: #c1ccd8; font-size: 13px; }
+.b11-public-body { min-height: 0; flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 4px 2px 12px; }
+.b11-public-body h3 { font: 600 15px/1.3 "Exo 2", Inter, sans-serif; margin: 14px 0 10px; color: #f5f7fa; }
+.b11-public-intents, .b11-public-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.b11-public-intents button, .b11-public-options button {
+  display: flex; flex-direction: column; align-items: flex-start; justify-content: center;
+  min-height: 82px; padding: 13px;
+  border: 1px solid #344755; border-radius: 14px;
+  background: #15212d; color: #f5f7fa; text-align: left;
+  font: inherit; cursor: pointer;
+}
+.b11-public-intents button span { color: #bdc9d4; font-size: 12px; }
+.b11-public-intents button strong { font-size: 13px; margin-bottom: 4px; }
+.b11-public-options button { min-height: 58px; font-weight: 600; }
+.b11-public-intents button:hover, .b11-public-options button:hover,
+.b11-public-intents button:focus-visible, .b11-public-options button:focus-visible {
+  border-color: #37c5ff; outline: 2px solid #37c5ff; outline-offset: 2px;
+}
+.b11-public-intents button:disabled, .b11-public-options button:disabled { opacity: .58; cursor: wait; }
+.b11-public-progress { margin: 8px 0 22px; font-size: 12px; color: #becbd7; }
+.b11-public-progressbar { width: 100%; height: 4px; background: #2c3239; border-radius: 4px; margin-top: 8px; overflow: hidden; }
+.b11-public-progressbar i { display: block; height: 100%; background: #37c5ff; }
+.b11-public-question { font-weight: 600; font-size: 18px; line-height: 1.45; }
+.b11-public-summary { background: #15212d; border: 1px solid #344755; padding: 16px; border-radius: 14px; }
+.b11-public-summary li { margin-bottom: 8px; overflow-wrap: anywhere; }
+.b11-public-summary ol, .b11-public-summary ul { padding-left: 20px; }
+.b11-public-summary > p { color: #bdc9d4; font-size: 12px; }
+.b11-public-summary button, .b11-public-restart, .b11-public-error button {
+  border: 1px solid #37c5ff; background: #17374a; border-radius: 12px;
+  color: #fff; font: 600 14px/1.2 Inter, sans-serif;
+  min-height: 44px; padding: 10px 14px; cursor: pointer;
+}
+.b11-public-restart { margin-top: 18px; }
+.b11-public-loading { color: #37c5ff; }
+.b11-public-error { padding: 12px; border: 1px solid #f6c453; border-radius: 12px; color: #ffdf93; margin-top: 10px; }
+.b11-public-footer { flex: 0 0 auto; font-size: 11px; color: #bcc8d5; border-top: 1px solid #344755; padding-top: 12px; }
+.b11-public-drawer button:focus-visible { outline: 2px solid #37c5ff; outline-offset: 3px; }
+@media (max-width: 390px) {
+  .b11-public-intents { grid-template-columns: 1fr; }
+  .b11-public-intents button { min-height: 58px; }
+  .b11-public-entry { right: 12px; bottom: max(14px, env(safe-area-inset-bottom, 0px)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .b11-public-layer *, .b11-public-entry { animation: none !important; transition: none !important; }
+}
