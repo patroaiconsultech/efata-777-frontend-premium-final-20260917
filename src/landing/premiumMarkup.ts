@@ -1,6 +1,6 @@
 // Transitional Wave 1 bridge.
 //
-// The markup below is immutable, source-controlled PatroAI landing content
+// The markup below is immutable, source-controlled EFATÁ 777 landing content
 // migrated from the audited standalone index.html at baseline 342f5c4.
 // It contains no user-provided HTML. Interactions are mounted separately in
 // premiumInteractions.ts so the React router remains the canonical runtime.
@@ -58,7 +58,7 @@ export const premiumMarkup = String.raw`
       <span class="immersive-gate__halo"></span>
       <img src="/assets/patroai-logo-integrated.png" alt="" />
     </div>
-    <p class="immersive-gate__eyebrow" data-i18n="immersive.eyebrow">PATROAI · EXPERIÊNCIA IMERSIVA</p>
+    <p class="immersive-gate__eyebrow" data-i18n="immersive.eyebrow">EFATÁ 777 · EXPERIÊNCIA IMERSIVA</p>
     <h1 id="immersiveTitle" data-i18n="immersive.title">Este é um ambiente imersivo.</h1>
     <p id="immersiveCopy" data-i18n="immersive.copy">Escolha entrar com som para viver a experiência completa ou continuar sem áudio.</p>
 
@@ -106,7 +106,7 @@ export const premiumMarkup = String.raw`
         As obras sonoras acessadas nesta experiência permanecem vinculadas ao autor e à plataforma de origem.
         Direitos autorais reservados ao autor das obras, conforme informado no destino acessado.
       </p>
-      <div class="immersive-gate__works" aria-label="Experiência sonora PatroAI">
+      <div class="immersive-gate__works" aria-label="Experiência sonora EFATÁ 777">
         <span>Obra imersiva</span>
         <a href="https://suno.com/@daninavioficial" target="_blank" rel="noopener noreferrer">
           Conheça mais obras deste artista
@@ -122,7 +122,7 @@ export const premiumMarkup = String.raw`
 <section
   class="neural-lobby"
   id="neuralLobby"
-  aria-label="Núcleo de navegação PatroAI"
+  aria-label="Núcleo de navegação EFATÁ 777"
   aria-hidden="true"
 >
   <div class="neural-lobby__canvas-stage" aria-hidden="true">
@@ -211,12 +211,12 @@ export const premiumMarkup = String.raw`
 
   <div class="neural-lobby__vignette" aria-hidden="true"></div>
 
-  <a class="neural-lobby__corner-brand" href="#top" data-neural-lobby-link aria-label="PatroAI">
-    <img src="/assets/patroai-logo-integrated.png" alt="PatroAI" />
+  <a class="neural-lobby__corner-brand" href="#top" data-neural-lobby-link aria-label="EFATÁ 777">
+    <img src="/assets/patroai-logo-integrated.png" alt="" />
   </a>
 
-  <div class="neural-lobby__source-reveal" aria-label="Fontes PatroAI" data-source-reveal>
-    <a href="#patroai" data-neural-lobby-link data-reveal-index="0"><span data-i18n="lobby.node.about">Conheça a PatroAI</span></a>
+  <div class="neural-lobby__source-reveal" aria-label="Fontes EFATÁ 777" data-source-reveal>
+    <a href="#patroai" data-neural-lobby-link data-reveal-index="0"><span data-i18n="lobby.node.about">Conheça a EFATÁ 777</span></a>
     <a href="#ecossistema" data-neural-lobby-link data-reveal-index="1"><span data-i18n="lobby.node.ecosystem">Ecossistema</span></a>
     <a href="#governanca" data-neural-lobby-link data-reveal-index="2"><span data-i18n="lobby.node.governance">Governança</span></a>
     <a href="#metodo" data-neural-lobby-link data-reveal-index="3"><span data-i18n="lobby.node.method">Método</span></a>
@@ -235,7 +235,7 @@ export const premiumMarkup = String.raw`
       class="neural-lobby__brand"
       tabindex="0"
       role="button"
-      aria-label="Conduzir núcleo PatroAI"
+      aria-label="Conduzir núcleo EFATÁ 777"
       aria-describedby="neuralLobbyDragHint"
       data-neural-logo-control
     >
@@ -249,7 +249,7 @@ export const premiumMarkup = String.raw`
       />
     </div>
 
-    <p class="neural-lobby__eyebrow" data-i18n="lobby.eyebrow">PATROAI · NÚCLEO IMERSIVO</p>
+    <p class="neural-lobby__eyebrow" data-i18n="lobby.eyebrow">EFATÁ 777 · NÚCLEO IMERSIVO</p>
     <h2 data-i18n="lobby.title">Escolha por onde deseja entrar.</h2>
     <p data-i18n="lobby.copy">
       Navegue pelo ecossistema enquanto a experiência sonora permanece ativa.
@@ -258,7 +258,7 @@ export const premiumMarkup = String.raw`
 
   <nav class="neural-lobby__nodes" aria-label="Navegação imersiva">
     <a class="neural-lobby__node neural-lobby__node--a" href="#patroai" data-neural-lobby-link>
-      <span data-i18n="lobby.node.about">Conheça a PatroAI</span>
+      <span data-i18n="lobby.node.about">Conheça a EFATÁ 777</span>
     </a>
     <a class="neural-lobby__node neural-lobby__node--b" href="#ecossistema" data-neural-lobby-link>
       <span data-i18n="lobby.node.ecosystem">Ecossistema</span>
@@ -285,11 +285,11 @@ export const premiumMarkup = String.raw`
     </a>
   </nav>
 
-  <div class="neural-lobby__carousel" data-lobby-carousel aria-label="Fontes PatroAI">
+  <div class="neural-lobby__carousel" data-lobby-carousel aria-label="Fontes EFATÁ 777">
     <button class="neural-lobby__carousel-arrow" type="button" data-carousel-step="-1" aria-label="Fonte anterior">‹</button>
     <div class="neural-lobby__carousel-viewport">
       <div class="neural-lobby__carousel-track" data-lobby-carousel-track>
-        <a href="#top" class="neural-lobby__carousel-item is-active" data-neural-lobby-link data-carousel-item="0"><span data-i18n="lobby.node.about">Conheça a PatroAI</span></a>
+        <a href="#top" class="neural-lobby__carousel-item is-active" data-neural-lobby-link data-carousel-item="0"><span data-i18n="lobby.node.about">Conheça a EFATÁ 777</span></a>
         <a href="#ecossistema" class="neural-lobby__carousel-item" data-neural-lobby-link data-carousel-item="1"><span data-i18n="lobby.node.ecosystem">Ecossistema</span></a>
         <a href="#governanca" class="neural-lobby__carousel-item" data-neural-lobby-link data-carousel-item="2"><span data-i18n="lobby.node.governance">Governança</span></a>
         <a href="#metodo" class="neural-lobby__carousel-item" data-neural-lobby-link data-carousel-item="3"><span data-i18n="lobby.node.method">Método</span></a>
@@ -326,7 +326,7 @@ export const premiumMarkup = String.raw`
   src="/media/patroai-v37-landing-111hz.mp3"
 ></audio>
 
-<aside class="music-dock" id="musicDock" hidden aria-label="Experiência sonora PatroAI">
+<aside class="music-dock" id="musicDock" hidden aria-label="Experiência sonora EFATÁ 777">
   <div class="music-dock__pulse" aria-hidden="true"></div>
   <div class="music-dock__copy">
     <strong>Experiência sonora</strong>
@@ -348,7 +348,7 @@ export const premiumMarkup = String.raw`
 <div class="progress" aria-hidden="true"></div>
     <header class="site-header">
       <nav class="nav" aria-label="Navegação principal">
-        <a class="brand brand--official" href="#top" aria-label="Grupo PatroAI">
+        <a class="brand brand--official" href="#top" aria-label="EFATÁ 777">
           <span class="header-brand-mark" aria-hidden="true" data-testid="official-header-logo">
             <span class="header-brand-aura"></span>
             <span class="header-brand-orbit header-brand-orbit--outer"></span>
@@ -356,7 +356,7 @@ export const premiumMarkup = String.raw`
             <img class="header-brand-image" src="/assets/patroai-logo-integrated.png" alt="" />
           </span>
           <span class="header-brand-copy">
-            <strong>Grupo PatroAI</strong>
+            <strong>EFATÁ 777</strong>
             <span>Consultech / Holding / AI Factory</span>
           </span>
         </a>
@@ -398,11 +398,11 @@ export const premiumMarkup = String.raw`
           <div class="hero-grid">
             <div>
               <p class="eyebrow" data-i18n="hero.eyebrow">Acesso privado e controlado</p>
-              <h1 id="hero-title" data-i18n-html="hero.title">Sistemas governados de <span>IA</span> para fluxos executivos.</h1>
-              <p class="hero-copy" data-i18n="hero.copy">O Grupo PatroAI une consultoria estratégica, tecnologia aplicada e desenvolvimento de novos negócios para transformar informação complexa em clareza, decisão e execução.</p>
+              <h1 id="hero-title" data-i18n-html="hero.title">Conheça a <span>Superinteligência Orquestrada</span>.</h1>
+              <p class="hero-copy" data-i18n="hero.copy">A EFATÁ 777 desenvolve uma proposta brasileira de inteligência artificial multiagêntica: diferentes agentes especializados, coordenados com contexto, governança e rastreabilidade. Chamamos essa visão arquitetural de Superinteligência Orquestrada.</p>
               <div class="hero-actions">
-                <a class="button primary" href="#contato" data-i18n="hero.primary">Falar com um especialista</a>
-                <a class="button secondary" href="#ecossistema" data-i18n="hero.secondary">Conhecer atuação</a>
+                <a class="button primary" href="#ecossistema" data-i18n="hero.primary">Explorar possibilidades</a>
+                <a class="button secondary" href="#patroai" data-i18n="hero.secondary">Conhecer o ecossistema</a>
               <span id="pwaInstallSlot" class="pwa-install-slot"></span>
               </div>
               <div class="assurance" aria-label="Indicadores de confiança">
@@ -412,9 +412,9 @@ export const premiumMarkup = String.raw`
               </div>
             </div>
 
-            <div class="device-stage" aria-label="Prévia visual da plataforma PatroAI">
+            <div class="device-stage" aria-label="Prévia visual da plataforma EFATÁ 777">
               <div class="screen-card" id="screenCard">
-                <div class="screen-top"><span>Grupo PatroAI / Executive OS</span><span>private_access=true</span></div>
+                <div class="screen-top"><span>EFATÁ 777 / Executive OS</span><span>private_access=true</span></div>
                 <div class="screen-body">
                   <div class="interface-panel">
                     <p class="eyebrow">Plataforma</p>
@@ -451,8 +451,8 @@ export const premiumMarkup = String.raw`
             <div class="level-six-panel__signal" aria-hidden="true"><span></span><span></span><span></span></div>
             <div class="level-six-panel__copy">
               <p class="eyebrow" data-i18n="level6.eyebrow">Núcleo de Inteligência Artificial Imersiva</p>
-              <h2 id="level-six-title" data-i18n="level6.title">Nível 6: uma inteligência que estamos cocriando.</h2>
-              <p data-i18n="level6.copy">A PatroAI pesquisa e desenvolve uma nova camada de inteligência: sistemas que conectam agentes, contexto, presença, música, interface espacial, governança e impacto humano em uma experiência viva.</p>
+              <h2 id="level-six-title" data-i18n="level6.title">Uma nova fronteira: inteligências que colaboram.</h2>
+              <p data-i18n="level6.copy">Nossa arquitetura pesquisa novas formas de conectar agentes especializados, contexto, experiência imersiva, governança e auditabilidade, mantendo responsabilidades e limites explícitos.</p>
               <p class="level-six-panel__status" data-i18n="level6.status">Fronteira em cocriação · conceito em desenvolvimento</p>
               <a class="button secondary" href="#contato" data-i18n="level6.cta">Cocriar essa fronteira</a>
             </div>
@@ -472,11 +472,17 @@ export const premiumMarkup = String.raw`
         <div class="section-inner patroai-about__shell">
           <div class="section-head patroai-about__intro reveal">
             <div>
-              <p class="eyebrow">CONHEÇA A PATROAI</p>
-              <h2 id="patroaiAboutTitle">Tecnologia, estratégia e propósito para perpetuar negócios.</h2>
+              <p class="eyebrow">CONHEÇA A EFATÁ 777</p>
+              <h2 id="patroaiAboutTitle">Uma arquitetura de inteligências. Uma visão desenvolvida no Brasil.</h2>
               <p class="patroai-about__lead">
-                A Patroai nasce para unir inteligência estratégica, tecnologia aplicada e responsabilidade empresarial em projetos capazes de gerar valor sustentável.
+                Superinteligência Orquestrada é o nome que damos à nossa proposta de conectar agentes especializados, coordenação, governança e auditabilidade. Uma visão brasileira em desenvolvimento para transformar capacidades isoladas em colaboração orientada a resultados.
               </p>
+              <div class="efata-architecture" aria-label="Fundamentos da Superinteligência Orquestrada">
+                <article><h3 data-i18n="architecture.multi.title">Multiagêntica</h3><p data-i18n="architecture.multi.copy">Agentes especializados com funções e responsabilidades definidas.</p></article>
+                <article><h3 data-i18n="architecture.orchestrated.title">Orquestrada</h3><p data-i18n="architecture.orchestrated.copy">Coordenação de contexto, especialidades e fluxos de trabalho.</p></article>
+                <article><h3 data-i18n="architecture.governed.title">Governada</h3><p data-i18n="architecture.governed.copy">Permissões, políticas e limites sob autoridade do backend.</p></article>
+                <article><h3 data-i18n="architecture.auditable.title">Auditável</h3><p data-i18n="architecture.auditable.copy">Registros e evidências para acompanhar operações e resultados.</p></article>
+              </div>
             </div>
           </div>
 
@@ -515,7 +521,7 @@ export const premiumMarkup = String.raw`
               <p class="eyebrow" data-i18n="cocreation.eyebrow">Central de Cocriação</p>
               <h2 id="cocreation-title" data-i18n="cocreation.title">Onde novos negócios, startups e tecnologias ganham forma.</h2>
             </div>
-            <p data-i18n="cocreation.copy">A PatroAI conecta pessoas, repertórios, capital relacional e tecnologia própria para transformar oportunidades em negócios, produtos e ecossistemas com propósito.</p>
+            <p data-i18n="cocreation.copy">A EFATÁ 777 conecta pessoas, repertórios, capital relacional e tecnologia própria para transformar oportunidades em negócios, produtos e ecossistemas com propósito.</p>
           </div>
           <div class="unit-grid">
             <article class="unit-card reveal"><div class="unit-icon" aria-hidden="true"><span>01</span></div><h3 data-i18n="cocreation.business.title">Novos negócios</h3><p data-i18n="cocreation.business.copy">Cocriamos teses, modelos e caminhos de validação para oportunidades que precisam sair da intenção e encontrar mercado.</p></article>
@@ -529,7 +535,7 @@ export const premiumMarkup = String.raw`
       <section class="section alt" id="ecossistema" aria-labelledby="ecosystem-title">
         <div class="section-inner">
           <div class="section-head">
-            <div><p class="eyebrow" data-i18n="ecosystem.eyebrow">Ecossistema PatroAI</p><h2 id="ecosystem-title" data-i18n="ecosystem.title">Três frentes para construir vantagem com critério.</h2></div>
+            <div><p class="eyebrow" data-i18n="ecosystem.eyebrow">Ecossistema EFATÁ 777</p><h2 id="ecosystem-title" data-i18n="ecosystem.title">Três frentes para construir vantagem com critério.</h2></div>
             <p data-i18n="ecosystem.copy">A proposta combina visão executiva, estrutura de negócios e engenharia aplicada para projetos que precisam sair do discurso e entrar em operação com controle.</p>
           </div>
           <div class="unit-grid">
@@ -541,7 +547,7 @@ export const premiumMarkup = String.raw`
             <div class="patroai-pillars__intro">
               <p class="eyebrow" data-i18n="pillars.eyebrow">Pilares de atuação</p>
               <h3 id="pillars-title" data-i18n="pillars.title">Crescer com consciência, cocriação e impacto.</h3>
-              <p data-i18n="pillars.copy">A PatroAI conecta inteligência, pessoas e responsabilidade para transformar projetos em valor compartilhado.</p>
+              <p data-i18n="pillars.copy">A EFATÁ 777 conecta inteligência, pessoas e responsabilidade para transformar projetos em valor compartilhado.</p>
             </div>
             <div class="patroai-pillars__grid">
               <article class="patroai-pillar reveal"><span class="patroai-pillar__index">01</span><h4 data-i18n="pillar.cocreation.title">Cocriação</h4><p data-i18n="pillar.cocreation.copy">Construímos com empreendedores, especialistas, comunidades e parceiros, convertendo repertório coletivo em soluções vivas.</p></article>
@@ -591,7 +597,7 @@ export const premiumMarkup = String.raw`
             <div>
               <p class="eyebrow" data-i18n="legal.eyebrow">Privacidade e termos</p>
               <h2 id="legal-title" data-i18n="legal.title">Uso responsável, dados e governança.</h2>
-              <p class="legal-summary" data-i18n="legal.copy">Princípios de privacidade, segurança e uso responsável orientam o ambiente PatroAI e a forma como dados, agentes e decisões são tratados.</p>
+              <p class="legal-summary" data-i18n="legal.copy">Princípios de privacidade, segurança e uso responsável orientam o ambiente EFATÁ 777 e a forma como dados, agentes e decisões são tratados.</p>
             </div>
             <div class="legal-grid">
               <details class="legal-card" open>
@@ -639,8 +645,8 @@ export const premiumMarkup = String.raw`
             <article class="career-card reveal">
               <span class="career-index">02</span>
               <h3 data-i18n="careers.engineering.title">Engenharia &amp; IA</h3>
-              <p data-i18n="careers.engineering.copy">Software, agentes, dados, infraestrutura, segurança e produto para construir a próxima camada do ecossistema PatroAI.</p>
-              <a class="text-link" href="/talentos/candidatura?type=career&area=Engenharia%20%26%20IA" data-application-open="career" data-application-interest="Engenharia &amp; IA">Quero construir com a PatroAI →</a>
+              <p data-i18n="careers.engineering.copy">Software, agentes, dados, infraestrutura, segurança e produto para construir a próxima camada do ecossistema EFATÁ 777.</p>
+              <a class="text-link" href="/talentos/candidatura?type=career&area=Engenharia%20%26%20IA" data-application-open="career" data-application-interest="Engenharia &amp; IA">Quero construir com a EFATÁ 777 →</a>
             </article>
             <article class="career-card reveal">
               <span class="career-index">03</span>
@@ -656,7 +662,7 @@ export const premiumMarkup = String.raw`
             </article>
           </div>
           <div class="preview-note reveal">
-            <strong data-i18n="careers.note">As candidaturas passam por triagem qualificada, consentimento e análise de aderência ao ecossistema PatroAI.</strong>
+            <strong data-i18n="careers.note">As candidaturas passam por triagem qualificada, consentimento e análise de aderência ao ecossistema EFATÁ 777.</strong>
           </div>
 
         </div>
@@ -667,7 +673,7 @@ export const premiumMarkup = String.raw`
           <div class="application-intake__head">
             <div>
               <p class="eyebrow">Candidatura qualificada</p>
-              <h2 id="talentos-form-title">Construa o próximo ciclo com a PatroAI.</h2>
+              <h2 id="talentos-form-title">Construa o próximo ciclo com a EFATÁ 777.</h2>
               <p>Conte sua trajetória com clareza. O formulário preserva um rascunho nesta aba e só envia o currículo após consentimento explícito.</p>
             </div>
             <div class="application-intake__switch" role="group" aria-label="Tipo de candidatura">
@@ -734,9 +740,9 @@ export const premiumMarkup = String.raw`
           <div class="contact-grid">
             <div>
               <p class="eyebrow" data-i18n="contact.eyebrow">Pré-onboarding qualificado</p>
-              <h2 id="contact-title" data-i18n="contact.title">Converse com a PatroAI.</h2>
+              <h2 id="contact-title" data-i18n="contact.title">Converse com a EFATÁ 777.</h2>
               <p class="hero-copy" data-i18n="contact.copy">Use este canal para oportunidades estratégicas, acesso privado, implantação, parcerias ou interesse profissional. Conte o contexto em poucas linhas e nossa equipe retornará após uma triagem inicial.</p>
-              <div class="hero-actions"><a class="button secondary" href="https://wa.me/5551989697605?text=Ol%C3%A1%2C%20Grupo%20PatroAI.%20Gostaria%20de%20falar%20sobre%20uma%20oportunidade%20estrat%C3%A9gica." data-i18n="contact.whatsapp">WhatsApp estratégico</a></div>
+              <div class="hero-actions"><a class="button secondary" href="https://wa.me/5551989697605?text=Ol%C3%A1%2C%20Grupo%20EFATÁ 777.%20Gostaria%20de%20falar%20sobre%20uma%20oportunidade%20estrat%C3%A9gica." data-i18n="contact.whatsapp">WhatsApp estratégico</a></div>
             </div>
             <form class="form-wrap" id="leadForm">
               <div class="field-grid">
@@ -756,7 +762,7 @@ export const premiumMarkup = String.raw`
 
     <footer class="footer">
       <div class="footer-inner">
-        <span data-i18n="footer.left">Grupo PatroAI. Consultech, Holding e AI Factory.</span>
+        <span data-i18n="footer.left">EFATÁ 777. Consultech, Holding e AI Factory.</span>
         <span class="footer-links"><a href="#legal" data-i18n="footer.privacy">Privacidade e termos</a><a href="#contato" data-i18n="footer.contact">Contato</a></span>
         <span data-i18n="footer.right">Acesso privado. Proposta sob análise.</span>
       </div>

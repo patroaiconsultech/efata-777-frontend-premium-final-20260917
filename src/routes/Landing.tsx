@@ -6,6 +6,7 @@ import { V37Immersive } from "../landing/V37Immersive";
 import { premiumMarkup } from "../landing/premiumMarkup";
 import { mountPremiumLanding } from "../landing/premiumInteractions";
 import "../landing/premium.css";
+import "../landing/efata-architecture.css";
 import { PublicSalesDrawer } from "../features/public-sales/PublicSalesDrawer";
 
 export default function Landing() {
@@ -32,7 +33,7 @@ export default function Landing() {
     } catch (error) {
       // Public entry must remain usable even if an optional immersive
       // enhancement is unsupported by a mobile browser/GPU.
-      console.error("PatroAI landing enhancement mount failed", error);
+      console.error("EFATÁ 777 landing enhancement mount failed", error);
       setMountFailed(true);
       return undefined;
     }
@@ -52,7 +53,7 @@ export default function Landing() {
       {mountFailed ? (
         <div className="landing-safe-recovery" role="status" aria-live="polite">
           <div className="landing-safe-recovery__card">
-            <span>PatroAI · Experiência</span>
+            <span>EFATÁ 777 · Experiência</span>
             <h1>Seu navegador entrou em modo compatível.</h1>
             <p>
               Um efeito imersivo não pôde ser iniciado neste dispositivo, mas o

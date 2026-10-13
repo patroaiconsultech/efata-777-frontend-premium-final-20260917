@@ -23,12 +23,12 @@ test("landing and app are separate routes", () => {
   assert.match(app, /path="\/app" element={<AppEntry/);
 });
 
-test("landing contains PatroAI premium institutional sections", () => {
-  assert.match(premiumMarkup, /Grupo PatroAI/);
-  assert.match(premiumMarkup, /Ecossistema PatroAI/);
+test("landing contains EFATÁ 777 premium institutional sections", () => {
+  assert.match(premiumMarkup, /EFATÁ 777/);
+  assert.match(premiumMarkup, /Ecossistema EFATÁ 777/);
   assert.match(premiumMarkup, /Governança, ESG e perpetuação/);
   assert.match(premiumMarkup, /Do briefing ao sistema governado/);
-  assert.match(premiumMarkup, /Converse com a PatroAI/);
+  assert.match(premiumMarkup, /Converse com a EFATÁ 777/);
 });
 
 test("premium landing remains under the canonical React route", () => {

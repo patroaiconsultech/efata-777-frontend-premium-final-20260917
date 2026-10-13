@@ -1,5 +1,5 @@
 /**
- * PatroAI immersive landing V3.8.2 — Mobile Stabilization + Canonical Audio.
+ * EFATÁ 777 immersive landing V3.8.2 — Mobile Stabilization + Canonical Audio.
  *
  * Contract:
  * - first interaction is an explicit immersive audio consent gate;
@@ -213,7 +213,7 @@ export function V37Immersive({ onPrivateAccess }: V37ImmersiveProps) {
     <section
       className={`v37-immersive v38-immersive v37-immersive--${stage}`}
       data-audio-active={playing ? "true" : "false"}
-      aria-label="Experiência imersiva PatroAI"
+      aria-label="Experiência imersiva EFATÁ 777"
     >
       <div className="v37-atmosphere" aria-hidden="true" />
 
@@ -236,7 +236,7 @@ export function V37Immersive({ onPrivateAccess }: V37ImmersiveProps) {
             src="/assets/patroai-logo-integrated.png"
             alt=""
           />
-          <p className="v38-entry__eyebrow">PATROAI · EXPERIÊNCIA IMERSIVA</p>
+          <p className="v38-entry__eyebrow">EFATÁ 777 · EXPERIÊNCIA IMERSIVA</p>
           <h1 id="v38-entry-title">Esta é uma página imersiva.</h1>
           <p className="v38-entry__copy">
             A experiência combina imagem, atmosfera e uma faixa sonora reativa.
@@ -280,7 +280,7 @@ export function V37Immersive({ onPrivateAccess }: V37ImmersiveProps) {
         }}
       >
         <header className="v37-lobby__header">
-          <span>PATROAI · NÚCLEO IMERSIVO</span>
+          <span>EFATÁ 777 · NÚCLEO IMERSIVO</span>
           <button type="button" onClick={() => exitTo("#top")}>
             Ir para apresentação
           </button>
@@ -290,11 +290,11 @@ export function V37Immersive({ onPrivateAccess }: V37ImmersiveProps) {
           ref={coreRef}
           className="v37-core"
           role="img"
-          aria-label="Núcleo audiovisual PatroAI"
+          aria-label="Núcleo audiovisual EFATÁ 777"
         >
           <span className="v37-core__glow" aria-hidden="true" />
           <video
-            aria-label="Vídeo em loop do núcleo PatroAI"
+            aria-label="Vídeo em loop do núcleo EFATÁ 777"
             autoPlay
             muted
             loop

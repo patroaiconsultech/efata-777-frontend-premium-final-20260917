@@ -17,9 +17,9 @@ test("landing exposes the co-creation central as a primary proposition", () => {
 });
 
 test("tailor-made boutique remains an execution mode inside the co-creation ecosystem", () => {
-  assert.match(interactions, /Boutique de IA sob medida/);
+  assert.match(interactions, /EFATÁ 777 · TECNOLOGIA BRASILEIRA/);
   assert.match(interactions, /A boutique tailor-made é o nosso modo de entrega/);
   assert.match(interactions, /Central de Cocriação/);
-  assert.match(index, /central de cocriação de novos negócios, startups e tecnologias/i);
+  assert.match(index, /Superinteligência Orquestrada/i);
   assert.match(styles, /\.cocreation-section/);
 });

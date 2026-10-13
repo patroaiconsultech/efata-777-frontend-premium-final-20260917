@@ -204,7 +204,7 @@ test("Rev M keeps the official logo and makes only its presentation audio-reacti
 
 test("Rev O provides a fullscreen neural gateway before site navigation", () => {
   assert.match(markup, /class="neural-lobby"/);
-  assert.match(markup, /PATROAI · NÚCLEO IMERSIVO/);
+  assert.match(markup, /EFATÁ 777 · NÚCLEO IMERSIVO/);
   assert.match(css, /PLAT PREMIUM REV O — NEURAL IMMERSIVE GATEWAY/);
   assert.match(css, /\.neural-lobby\.is-active/);
   assert.match(css, /prefers-reduced-motion: reduce/);

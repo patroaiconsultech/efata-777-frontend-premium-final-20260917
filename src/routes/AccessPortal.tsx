@@ -59,11 +59,11 @@ function friendlyAuthError(error: unknown): string {
     TENANT_SELECTION_REQUIRED:
       "Esta conta pertence a mais de um espaço. Informe o Tenant ID correto.",
     NATIVE_AUTH_DISABLED:
-      "O acesso próprio da PatroAI ainda não está ativo nesta implantação.",
+      "O acesso próprio da EFATÁ 777 ainda não está ativo nesta implantação.",
     NATIVE_BOOTSTRAP_FORBIDDEN:
       "A configuração inicial não pôde ser concluída.",
     NATIVE_BOOTSTRAP_ALREADY_COMPLETED:
-      "A primeira conta segura da PatroAI já foi configurada.",
+      "A primeira conta segura da EFATÁ 777 já foi configurada.",
     PASSWORD_TOO_SHORT:
       "Use uma senha com pelo menos 15 caracteres.",
     PASSWORD_BLOCKLISTED:
@@ -512,8 +512,8 @@ export default function AccessPortal() {
       <div className="access-portal__glow" aria-hidden="true" />
       <section className="access-card" aria-labelledby="access-title">
         <Link className="access-card__back" to="/">Voltar à experiência</Link>
-        <p className="access-eyebrow">PATROAI · ACESSO PROTEGIDO</p>
-        <h1 id="access-title">Entre no núcleo PatroAI.</h1>
+        <p className="access-eyebrow">EFATÁ 777 · ACESSO PROTEGIDO</p>
+        <h1 id="access-title">Entre no núcleo EFATÁ 777.</h1>
         <p className="access-lead">
           Identidade protegida e controles adicionais para contas privilegiadas.
         </p>
@@ -527,9 +527,9 @@ export default function AccessPortal() {
 
         {mode === "login" ? (
           <form className="access-step" onSubmit={submitLogin}>
-            <span>SESSÃO PATROAI</span>
+            <span>SESSÃO EFATÁ 777</span>
             <h2>Bem-vindo de volta.</h2>
-            <p>Use sua credencial PatroAI. Contas administrativas exigem segundo fator.</p>
+            <p>Use sua credencial EFATÁ 777. Contas administrativas exigem segundo fator.</p>
             <label><span>E-mail</span><input value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" inputMode="email" placeholder="voce@empresa.com" /></label>
             <label><span>Senha</span><input value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" type={showPassword ? "text" : "password"} placeholder="Sua senha" /></label>
             <label><span>Tenant ID <small>(somente se sua conta usa mais de um espaço)</small></span><input value={tenantId} onChange={(e) => setTenantId(e.target.value)} autoComplete="off" /></label>
@@ -638,7 +638,7 @@ export default function AccessPortal() {
 
         {mode === "activate" ? (
           <form className="access-step" onSubmit={submitAccountRecovery}>
-            <span>ATIVAÇÃO SEGURA</span><h2>Defina sua primeira senha PatroAI.</h2>
+            <span>ATIVAÇÃO SEGURA</span><h2>Defina sua primeira senha EFATÁ 777.</h2>
             <p>Este link prova a posse do seu e-mail. Nenhum tenant ou permissão será criado ou reativado por esta etapa.</p>
             {!actionToken ? <label><span>Token</span><input value={actionToken} onChange={(e) => setActionToken(e.target.value)} autoComplete="off" /></label> : null}
             <label><span>Nova senha</span><input value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" type={showPassword ? "text" : "password"} placeholder="Mínimo de 15 caracteres" /></label>
@@ -735,7 +735,7 @@ export default function AccessPortal() {
 
         {mode === "register" && step === "credentials" ? (
           <form className="access-step" onSubmit={submitRegister}>
-            <span>CREDENCIAL PATROAI</span><h2>Crie sua credencial segura.</h2>
+            <span>CREDENCIAL EFATÁ 777</span><h2>Crie sua credencial segura.</h2>
             <label><span>Nome</span><input value={displayName} onChange={(e) => setDisplayName(e.target.value)} autoComplete="name" /></label>
             <label><span>E-mail</span><input value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" inputMode="email" /></label>
             <label><span>Senha</span><input value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" type={showPassword ? "text" : "password"} placeholder="Mínimo de 15 caracteres" /></label>
