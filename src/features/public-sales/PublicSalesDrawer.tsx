@@ -27,7 +27,7 @@ type NewSession = {
 };
 
 const INTENTS: ReadonlyArray<{ id: Intent; label: string; caption: string }> = [
-  { id: "understand_platform", label: "Conhecer a EFATÁ 777", caption: "Onde a plataforma pode ajudar" },
+  { id: "understand_platform", label: "Conhecer a Efatá", caption: "Onde a plataforma pode ajudar" },
   { id: "shadow_ai_diagnostic", label: "Uso de IA sem controle", caption: "Primeiros cuidados com Shadow AI" },
   { id: "governed_ai", label: "Governança de IA", caption: "Acesso, dados e rastreabilidade" },
   { id: "autonomous_sales", label: "Vendas com IA", caption: "Etapas de maior impacto" },
@@ -132,13 +132,6 @@ export function PublicSalesDrawer() {
     setOpen(true);
   }
 
-  useEffect(() => {
-    if (import.meta.env.VITE_PUBLIC_SALES_ENABLED !== "true" || !BASE) return;
-    const onRequested = () => beginOpen();
-    window.addEventListener("efata777:open-public-sales", onRequested);
-    return () => window.removeEventListener("efata777:open-public-sales", onRequested);
-  }, []);
-
   async function start(intent: Intent) {
     if (busy) return;
     const controller = new AbortController();
@@ -195,7 +188,7 @@ export function PublicSalesDrawer() {
     if (!summary) return;
     try {
       await navigator.clipboard.writeText([
-        "Orientação inicial EFATÁ 777",
+        "Orientação inicial Efatá",
         ...summary.highlights,
         "Próximos passos:",
         ...summary.next_steps,
@@ -214,7 +207,7 @@ export function PublicSalesDrawer() {
     <>
       {!open && (
         <button className="b11-public-entry" type="button" onClick={beginOpen}>
-          <span aria-hidden="true">✧</span> Conversar com a EFATÁ 777
+          <span aria-hidden="true">✧</span> Descubra em 2 minutos
         </button>
       )}
       {open && createPortal(
@@ -225,8 +218,8 @@ export function PublicSalesDrawer() {
             aria-labelledby="b11-public-title" aria-describedby="b11-public-description">
             <header className="b11-public-header">
               <div>
-                <span className="b11-public-eyebrow">EFATÁ 777 · ASSISTENTE EDITORIAL</span>
-                <h2 id="b11-public-title">Descubra a EFATÁ 777 em uma conversa guiada.</h2>
+                <span className="b11-public-eyebrow">EFATÁ · ORIENTAÇÃO EDITORIAL</span>
+                <h2 id="b11-public-title">Um primeiro passo, sem complicação.</h2>
               </div>
               <button ref={closeRef} className="b11-public-close" type="button"
                 onClick={close} aria-label="Fechar orientação">×</button>
@@ -238,7 +231,7 @@ export function PublicSalesDrawer() {
             <div className="b11-public-body" aria-busy={busy}>
               {!current && (
                 <>
-                  <h3>Sobre o que deseja conversar?</h3>
+                  <h3>O que você deseja explorar?</h3>
                   <div className="b11-public-intents">
                     {INTENTS.map((intent) => (
                       <button key={intent.id} type="button" disabled={busy}

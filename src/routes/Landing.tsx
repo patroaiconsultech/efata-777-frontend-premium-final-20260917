@@ -6,16 +6,11 @@ import { V37Immersive } from "../landing/V37Immersive";
 import { premiumMarkup } from "../landing/premiumMarkup";
 import { mountPremiumLanding } from "../landing/premiumInteractions";
 import "../landing/premium.css";
-import "../landing/efata-architecture.css";
 import { PublicSalesDrawer } from "../features/public-sales/PublicSalesDrawer";
-import { publicEnv } from "../config/runtime";
 
 export default function Landing() {
   const rootRef = useRef<HTMLDivElement>(null);
   const [pwaSlot, setPwaSlot] = useState<HTMLElement | null>(null);
-  const [salesSlot, setSalesSlot] = useState<HTMLElement | null>(null);
-  const salesReady = import.meta.env.VITE_PUBLIC_SALES_ENABLED === "true"
-    && Boolean(publicEnv("VITE_API_BASE_URL").trim());
   const [mountFailed, setMountFailed] = useState(false);
   const navigate = useNavigate();
 
@@ -32,13 +27,12 @@ export default function Landing() {
           navigate("/access");
         },
       });
-      setSalesSlot(root.querySelector<HTMLElement>("#publicSalesLandingSlot"));
       setMountFailed(false);
       return cleanup;
     } catch (error) {
       // Public entry must remain usable even if an optional immersive
       // enhancement is unsupported by a mobile browser/GPU.
-      console.error("EFATÁ 777 landing enhancement mount failed", error);
+      console.error("PatroAI landing enhancement mount failed", error);
       setMountFailed(true);
       return undefined;
     }
@@ -58,7 +52,7 @@ export default function Landing() {
       {mountFailed ? (
         <div className="landing-safe-recovery" role="status" aria-live="polite">
           <div className="landing-safe-recovery__card">
-            <span>EFATÁ 777 · Experiência</span>
+            <span>PatroAI · Experiência</span>
             <h1>Seu navegador entrou em modo compatível.</h1>
             <p>
               Um efeito imersivo não pôde ser iniciado neste dispositivo, mas o
@@ -73,26 +67,6 @@ export default function Landing() {
           </div>
         </div>
       ) : null}
-      {salesSlot
-        ? createPortal(
-            <span className="efata-sales-slot__content">
-              <button
-                className="button secondary"
-                type="button"
-                disabled={!salesReady}
-                onClick={() => window.dispatchEvent(new Event("efata777:open-public-sales"))}
-              >
-                Conversar com a EFATÁ 777
-              </button>
-              {!salesReady ? (
-                <span className="efata-sales-status" role="status">
-                  Conversa guiada em homologação.
-                </span>
-              ) : null}
-            </span>,
-            salesSlot,
-          )
-        : null}
       {pwaSlot
         ? createPortal(<PwaInstallButton compact />, pwaSlot)
         : null}
