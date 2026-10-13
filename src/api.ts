@@ -1495,6 +1495,8 @@ export type NativeSession = {
 
 export type NativeRegistration = {
   status: string;
+  // /auth/register returns NativeSessionOut; other account actions can omit it.
+  authenticated?: boolean;
   verification_token?: string | null;
   claim_token?: string | null;
 };

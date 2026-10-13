@@ -193,6 +193,9 @@ export function mountPremiumLanding({
   let currentLang = translations[requestedLang] ? requestedLang : "pt";
   let musicEnergy = 0;
   let musicReactiveActive = false;
+  // Shared between the audio analyser and the WebGL energy sampler.
+  let audioBassLevel = 0;
+  let audioBeatLevel = 0;
   const lobbyPointer: NeuralPointerState = { x: 0.5, y: 0.5, active: false };
   let lobbyPointerReleaseTimer: number | null = null;
 
@@ -1380,12 +1383,10 @@ export function mountPremiumLanding({
     let audioReactiveFrame = 0;
     let audioReactiveLastSample = 0;
     let audioReactiveLevel = 0;
-    let audioBassLevel = 0;
     let audioMidLevel = 0;
     let audioHighLevel = 0;
     let audioBeatFast = 0;
     let audioBeatSlow = 0;
-    let audioBeatLevel = 0;
     let audioReactiveReady = false;
     let desktopNeuralMotionFrame = 0;
     const audioPlaylist = [
@@ -2328,12 +2329,12 @@ export function mountPremiumLanding({
       if (applicationInterestInput) applicationInterestInput.value = button.dataset.applicationInterest || "";
       persistApplicationDraft();
       document.querySelector<HTMLElement>("[data-application-section]")?.scrollIntoView({
-        behavior: reducedMotion.matches ? "auto" : "smooth",
+        behavior: reducedMotionPreference.matches ? "auto" : "smooth",
         block: "start",
       });
       window.setTimeout(() => {
         (applicationForm?.elements.namedItem("full_name") as HTMLInputElement | null)?.focus();
-      }, reducedMotion.matches ? 0 : 420);
+      }, reducedMotionPreference.matches ? 0 : 420);
     };
     button.addEventListener("click", onOpen);
     cleanups.push(() => button.removeEventListener("click", onOpen));
