@@ -132,6 +132,13 @@ export function PublicSalesDrawer() {
     setOpen(true);
   }
 
+  useEffect(() => {
+    if (import.meta.env.VITE_PUBLIC_SALES_ENABLED !== "true" || !BASE) return;
+    const onRequested = () => beginOpen();
+    window.addEventListener("efata777:open-public-sales", onRequested);
+    return () => window.removeEventListener("efata777:open-public-sales", onRequested);
+  }, []);
+
   async function start(intent: Intent) {
     if (busy) return;
     const controller = new AbortController();

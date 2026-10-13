@@ -32,7 +32,7 @@ type Mode =
   | "mfa-enroll"
   | "mfa-verify"
   | "recovery-codes";
-type RegisterStep = "entry" | "invite" | "code" | "cocreator" | "objective" | "credentials";
+type RegisterStep = "invite" | "code" | "cocreator" | "objective" | "credentials";
 
 const GOALS = [
   "Criar uma nova oferta",
@@ -137,7 +137,7 @@ export default function AccessPortal() {
     safeReturnPath(new URLSearchParams(window.location.search).get("next")),
   );
   const [mode, setMode] = useState<Mode>("login");
-  const [step, setStep] = useState<RegisterStep>("entry");
+  const [step, setStep] = useState<RegisterStep>("code");
   const [platformInviteInput, setPlatformInviteInput] = useState("");
   const [grant, setGrant] = useState("");
   const [code, setCode] = useState("");
@@ -185,7 +185,11 @@ export default function AccessPortal() {
   function switchMode(next: Mode) {
     setMode(next);
     setError("");
-    if (next === "register") setStep("entry");
+    if (next === "register") {
+      setStep("code");
+      setCode("");
+      setGrant("");
+    }
   }
 
   function submitPlatformInvite(event: FormEvent) {
@@ -312,6 +316,7 @@ export default function AccessPortal() {
     try {
       const response = await validateAccessCode(code.trim());
       setGrant(response.grant);
+      setCode("");
       setStep("cocreator");
     } catch (err) {
       setError(friendlyAccessCodeError(err));
@@ -665,20 +670,6 @@ export default function AccessPortal() {
           </form>
         ) : null}
 
-        {mode === "register" && step === "entry" ? (
-          <div className="access-step">
-            <span>NOVO ACESSO</span>
-            <h2>Crie sua conta na EFATÀ 777.</h2>
-            <p>O cadastro é controlado. Escolha como você recebeu autorização para entrar na plataforma.</p>
-            <button className="access-primary" type="button" onClick={() => setStep("invite")}>
-              Recebi um convite por e-mail
-            </button>
-            <button className="access-text-button" type="button" onClick={() => setStep("code")}>
-              Tenho um código de acesso
-            </button>
-          </div>
-        ) : null}
-
         {mode === "register" && step === "invite" ? (
           <form className="access-step" onSubmit={submitPlatformInvite}>
             <span>CONVITE DE PLATAFORMA</span>
@@ -698,19 +689,34 @@ export default function AccessPortal() {
             <button className="access-primary" disabled={!platformInviteInput.trim()}>
               Continuar para criar minha senha
             </button>
-            <button className="access-text-button" type="button" onClick={() => { setStep("entry"); setError(""); }}>
-              Voltar
+            <button className="access-text-button" type="button" onClick={() => { setStep("code"); setError(""); }}>
+              Usar um código de acesso
             </button>
           </form>
         ) : null}
 
         {mode === "register" && step === "code" ? (
           <form className="access-step" onSubmit={submitCode}>
-            <span>ETAPA 1 DE 3</span><h2>Informe seu código de acesso.</h2>
-            <input value={code} onChange={(e) => setCode(e.target.value)} autoComplete="off" placeholder="Código de acesso" />
-            <button className="access-primary" disabled={busy}>{busy ? "Validando..." : "Validar código"}</button>
-            <button className="access-text-button" type="button" onClick={() => { setStep("entry"); setError(""); }}>
-              Voltar
+            <span>CADASTRO · ETAPA 1</span>
+            <h2>Crie sua conta na EFATÁ 777.</h2>
+            <p>Para iniciar o cadastro, valide o código fornecido pela equipe autorizada. Quem já possui conta pode entrar normalmente.</p>
+            <label htmlFor="registration-access-code"><span>Código de acesso</span></label>
+            <input
+              id="registration-access-code"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              autoComplete="off"
+              autoCapitalize="none"
+              spellCheck={false}
+              placeholder="Insira seu código"
+              required
+            />
+            <button className="access-primary" disabled={busy || !code.trim()}>
+              {busy ? "Validando..." : "Validar código e continuar"}
+            </button>
+            <button className="access-text-button" type="button" disabled={busy}
+              onClick={() => { setStep("invite"); setError(""); }}>
+              Recebi um convite por e-mail
             </button>
           </form>
         ) : null}

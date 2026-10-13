@@ -403,7 +403,8 @@ export const premiumMarkup = String.raw`
               <div class="hero-actions">
                 <a class="button primary" href="#ecossistema" data-i18n="hero.primary">Explorar possibilidades</a>
                 <a class="button secondary" href="#patroai" data-i18n="hero.secondary">Conhecer o ecossistema</a>
-              <span id="pwaInstallSlot" class="pwa-install-slot"></span>
+                <span id="publicSalesLandingSlot" class="efata-sales-slot"></span>
+                <span id="pwaInstallSlot" class="pwa-install-slot"></span>
               </div>
               <div class="assurance" aria-label="Indicadores de confiança">
                 <div class="assurance-item reveal"><strong data-count="3">0</strong><span data-i18n="hero.kpi1">frentes integradas para estratégia, capital relacional e tecnologia.</span></div>

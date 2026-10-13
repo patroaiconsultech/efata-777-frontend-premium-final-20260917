@@ -8,9 +8,10 @@ const app = fs.readFileSync("src/App.tsx", "utf8");
 
 test("access portal exposes a clear create-account entry point", () => {
   assert.match(access, />Criar conta<\/button>/);
-  assert.match(access, /Crie sua conta na EFATÀ 777\./);
+  assert.match(access, /Crie sua conta na EFATÁ 777\./);
   assert.match(access, /Recebi um convite por e-mail/);
-  assert.match(access, /Tenho um código de acesso/);
+  assert.match(access, /Validar código e continuar/);
+  assert.match(access, /setStep\("code"\)/);
 });
 
 test("platform invite entry preserves fragment-token activation contract", () => {

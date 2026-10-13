@@ -281,8 +281,8 @@ export function V37Immersive({ onPrivateAccess }: V37ImmersiveProps) {
       >
         <header className="v37-lobby__header">
           <span>EFATÁ 777 · NÚCLEO IMERSIVO</span>
-          <button type="button" onClick={() => exitTo("#top")}>
-            Ir para apresentação
+          <button type="button" onClick={enterPrivateAccess}>
+            Acessar plataforma
           </button>
         </header>
 
@@ -322,9 +322,9 @@ export function V37Immersive({ onPrivateAccess }: V37ImmersiveProps) {
         <button
           className="v37-access"
           type="button"
-          onClick={enterPrivateAccess}
+          onClick={() => exitTo("#top")}
         >
-          Acessar Plataforma
+          Ir para apresentação
         </button>
 
         <div

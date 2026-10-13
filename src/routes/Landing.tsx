@@ -8,10 +8,14 @@ import { mountPremiumLanding } from "../landing/premiumInteractions";
 import "../landing/premium.css";
 import "../landing/efata-architecture.css";
 import { PublicSalesDrawer } from "../features/public-sales/PublicSalesDrawer";
+import { publicEnv } from "../config/runtime";
 
 export default function Landing() {
   const rootRef = useRef<HTMLDivElement>(null);
   const [pwaSlot, setPwaSlot] = useState<HTMLElement | null>(null);
+  const [salesSlot, setSalesSlot] = useState<HTMLElement | null>(null);
+  const salesReady = import.meta.env.VITE_PUBLIC_SALES_ENABLED === "true"
+    && Boolean(publicEnv("VITE_API_BASE_URL").trim());
   const [mountFailed, setMountFailed] = useState(false);
   const navigate = useNavigate();
 
@@ -28,6 +32,7 @@ export default function Landing() {
           navigate("/access");
         },
       });
+      setSalesSlot(root.querySelector<HTMLElement>("#publicSalesLandingSlot"));
       setMountFailed(false);
       return cleanup;
     } catch (error) {
@@ -68,6 +73,26 @@ export default function Landing() {
           </div>
         </div>
       ) : null}
+      {salesSlot
+        ? createPortal(
+            <span className="efata-sales-slot__content">
+              <button
+                className="button secondary"
+                type="button"
+                disabled={!salesReady}
+                onClick={() => window.dispatchEvent(new Event("efata777:open-public-sales"))}
+              >
+                Conversar com a EFATÁ 777
+              </button>
+              {!salesReady ? (
+                <span className="efata-sales-status" role="status">
+                  Conversa guiada em homologação.
+                </span>
+              ) : null}
+            </span>,
+            salesSlot,
+          )
+        : null}
       {pwaSlot
         ? createPortal(<PwaInstallButton compact />, pwaSlot)
         : null}
