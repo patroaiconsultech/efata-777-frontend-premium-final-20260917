@@ -207,3 +207,62 @@ test("SafeMarkdown keeps safe links clickable and unsafe links as visible text o
     cleanup();
   }
 });
+
+test("SafeMarkdown turns the agent's bare URLs into safe clickable links", () => {
+  const { SafeMarkdown, cleanup } = loadCompiledSafeMarkdown();
+  try {
+    const cases = [
+      {
+        input: "O site oficial do Partido Novo é https://novo.org.br/.",
+        hrefs: ["https://novo.org.br/"],
+      },
+      {
+        input: "**https://novo.org.br/** e *https://obia.nic.br/s/noticias*",
+        hrefs: ["https://novo.org.br/", "https://obia.nic.br/s/noticias"],
+      },
+      {
+        input: "Fontes: http://example.com/a?b=1&c=2, https://example.org/wiki/(AI).",
+        hrefs: ["http://example.com/a?b=1&c=2", "https://example.org/wiki/(AI)"],
+      },
+      {
+        input: "[fonte Brave](https://g1.globo.com/tecnologia/) e https://g1.globo.com/tecnologia/.",
+        hrefs: ["https://g1.globo.com/tecnologia/", "https://g1.globo.com/tecnologia/"],
+      },
+    ];
+    for (const { input, hrefs } of cases) {
+      const tree = SafeMarkdown({ content: input });
+      const anchors = collectElements(tree, "a");
+      assert.deepEqual(anchors.map((anchor) => anchor.props.href), hrefs, input);
+      assert.equal(visibleText(tree), input.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1").replace(/\*\*/g, "").replace(/(?<!\*)\*(?!\*)/g, ""), input);
+      for (const anchor of anchors) {
+        assert.equal(anchor.props.target, "_blank");
+        assert.equal(anchor.props.rel, "noopener noreferrer");
+      }
+    }
+  } finally {
+    cleanup();
+  }
+});
+
+test("SafeMarkdown does not autolink code fences, inline code, or unsupported URL schemes", () => {
+  const { SafeMarkdown, cleanup } = loadCompiledSafeMarkdown();
+  try {
+    const input = [
+      "Um token `https://example.org/secret` e um endereço javascript:alert(1).",
+      "",
+      "```text",
+      "https://example.org/secret-in-code",
+      "```",
+      "",
+      "https://example.org/public",
+    ].join("\n");
+    const tree = SafeMarkdown({ content: input });
+    const anchors = collectElements(tree, "a");
+    assert.deepEqual(anchors.map((anchor) => anchor.props.href), ["https://example.org/public"]);
+    assert.equal(collectElements(tree, "pre").length, 1);
+    assert.equal(collectElements(tree, "code").length, 2);
+    assert.match(visibleText(tree), /javascript:alert\(1\)/);
+  } finally {
+    cleanup();
+  }
+});

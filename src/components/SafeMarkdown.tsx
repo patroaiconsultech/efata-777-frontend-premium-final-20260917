@@ -11,8 +11,26 @@ function safeHref(value: unknown): string | null {
   return null;
 }
 
+function bareUrlParts(value: string): { href: string; trailing: string } {
+  let end = value.length;
+  while (end > 0) {
+    const last = value[end - 1];
+    const current = value.slice(0, end);
+    if (/[.,!?;:]/.test(last)) {
+      end--;
+    } else if (last === ")" && (current.match(/\)/g) ?? []).length > (current.match(/\(/g) ?? []).length) {
+      end--;
+    } else if (last === "]" || last === "}") {
+      end--;
+    } else {
+      break;
+    }
+  }
+  return { href: value.slice(0, end), trailing: value.slice(end) };
+}
+
 function inlineMarkdown(value: string): ReactNode[] {
-  const pattern = /\[([^\]]+)\]\(([^)]+)\)|`([^`]+)`|(\*\*|__)(.+?)\4|\*([^*]+)\*|(?<![A-Za-z0-9])_([^_]+)_(?![A-Za-z0-9])/g;
+  const pattern = /\[([^\]]+)\]\(([^)]+)\)|`([^`]+)`|(\*\*|__)(.+?)\4|\*([^*]+)\*|(?<![A-Za-z0-9])_([^_]+)_(?![A-Za-z0-9])|(?<![A-Za-z0-9_/@:=])(https?:\/\/[^\s<>"'`]+)/g;
   const nodes: ReactNode[] = [];
   let cursor = 0;
   let match: RegExpExecArray | null;
@@ -20,7 +38,7 @@ function inlineMarkdown(value: string): ReactNode[] {
 
   while ((match = pattern.exec(value)) !== null) {
     if (match.index > cursor) nodes.push(value.slice(cursor, match.index));
-    const [token, linkLabel, linkTarget, code, strongMarker, strongText, italicText, underscoreText] = match;
+    const [token, linkLabel, linkTarget, code, strongMarker, strongText, italicText, underscoreText, bareUrl] = match;
     if (linkLabel !== undefined && linkTarget !== undefined) {
       const href = safeHref(linkTarget);
       nodes.push(
@@ -40,9 +58,16 @@ function inlineMarkdown(value: string): ReactNode[] {
     } else if (code) {
       nodes.push(<code key={`code-${key++}`}>{code}</code>);
     } else if (strongMarker) {
-      nodes.push(<strong key={`strong-${key++}`}>{strongText}</strong>);
+      nodes.push(<strong key={`strong-${key++}`}>{inlineMarkdown(strongText)}</strong>);
     } else if (italicText || underscoreText) {
-      nodes.push(<em key={`em-${key++}`}>{italicText || underscoreText}</em>);
+      nodes.push(<em key={`em-${key++}`}>{inlineMarkdown(italicText || underscoreText)}</em>);
+    } else if (bareUrl !== undefined) {
+      const { href, trailing } = bareUrlParts(bareUrl);
+      const safe = safeHref(href);
+      nodes.push(
+        safe ? <a key={`url-${key++}`} href={safe} target="_blank" rel="noopener noreferrer">{href}</a> : href,
+      );
+      if (trailing) nodes.push(trailing);
     } else {
       nodes.push(token);
     }
