@@ -37,7 +37,7 @@ function runOptionalLandingFeature(name: string, feature: () => void) {
 const translations: Record<string, Record<string, string>> = {
         pt: {
           "nav.cocreation": "Cocriação", "nav.ecosystem": "Ecossistema", "nav.governance": "Governança", "nav.method": "Método", "nav.contact": "Contato", "nav.careers": "Carreiras", "nav.cocreator": "Co-Criador", "nav.private": "Acesso privado", "immersive.eyebrow": "EFATÁ 777 · EXPERIÊNCIA IMERSIVA", "immersive.title": "Este é um ambiente imersivo.", "immersive.copy": "Escolha entrar com som para viver a experiência completa ou continuar sem áudio.", "immersive.sound.cta": "Entrar com som", "immersive.sound.copy": "Ativar a trilha e entrar no núcleo imersivo", "immersive.silent": "Entrar sem som", "immersive.direct": "Ir direto para a apresentação", "immersive.headphones": "Recomendamos o uso de fones de ouvido para uma experiência mais imersiva.", "lobby.eyebrow": "EFATÁ 777 · NÚCLEO IMERSIVO", "lobby.title": "Escolha por onde deseja entrar.", "lobby.copy": "Navegue pelo ecossistema enquanto a experiência sonora permanece ativa.", "lobby.node.about": "Conheça a EFATÁ 777", "lobby.node.ecosystem": "Ecossistema", "lobby.node.governance": "Governança", "lobby.node.method": "Método", "lobby.node.careers": "Carreiras & Talentos", "lobby.node.contact": "Contato Estratégico", "lobby.node.platform": "Acessar Plataforma", "lobby.hint": "Selecione um núcleo para entrar", "lobby.dragHint": "Toque e conduza o núcleo",
-          "level6.eyebrow": "Núcleo de Inteligência Artificial Imersiva", "level6.title": "Uma nova fronteira: inteligências que colaboram.", "level6.copy": "Nossa arquitetura pesquisa novas formas de conectar agentes especializados, contexto, experiência imersiva, governança e auditabilidade, mantendo responsabilidades e limites explícitos.", "level6.status": "Conceito arquitetural em desenvolvimento · capacidades sob validação", "level6.cta": "Cocriar essa fronteira", "level6.layer.context": "Contexto", "level6.layer.agents": "Agentes", "level6.layer.presence": "Presença", "level6.layer.governance": "Governança", "level6.layer.impact": "Impacto", "hero.eyebrow": "EFATÁ 777 · TECNOLOGIA BRASILEIRA", "architecture.multi.title": "Multiagêntica", "architecture.multi.copy": "Agentes especializados com funções e responsabilidades definidas.", "architecture.orchestrated.title": "Orquestrada", "architecture.orchestrated.copy": "Coordenação de contexto, especialidades e fluxos de trabalho.", "architecture.governed.title": "Governada", "architecture.governed.copy": "Permissões, políticas e limites sob autoridade do backend.", "architecture.auditable.title": "Auditável", "architecture.auditable.copy": "Registros e evidências para acompanhar operações e resultados.", "hero.title": "Conheça a <span>Superinteligência Orquestrada</span>.", "hero.copy": "A EFATÁ 777 desenvolve uma proposta brasileira de inteligência artificial multiagêntica: diferentes agentes especializados, coordenados com contexto, governança e rastreabilidade. Chamamos essa visão arquitetural de Superinteligência Orquestrada.", "hero.primary": "Explorar possibilidades", "hero.secondary": "Conhecer o ecossistema", "hero.kpi1": "frentes integradas para estratégia, capital relacional e tecnologia.", "hero.kpi2": "por cento orientado a governança, rastreabilidade e decisão.", "hero.kpi3": "ambiente privado para relacionamento qualificado e seguro.",
+          "level6.eyebrow": "Núcleo de Inteligência Artificial Imersiva", "level6.title": "Uma nova fronteira: inteligências que colaboram.", "level6.copy": "Nossa arquitetura pesquisa novas formas de conectar agentes especializados, contexto, experiência imersiva, governança e auditabilidade, mantendo responsabilidades e limites explícitos.", "level6.status": "Conceito arquitetural em desenvolvimento · capacidades sob validação", "level6.cta": "Cocriar essa fronteira", "level6.layer.context": "Contexto", "level6.layer.agents": "Agentes", "level6.layer.presence": "Presença", "level6.layer.governance": "Governança", "level6.layer.impact": "Impacto", "hero.eyebrow": "EFATÁ 777 · TECNOLOGIA BRASILEIRA", "architecture.multi.title": "Multiagêntica", "architecture.multi.copy": "Agentes especializados com funções e responsabilidades definidas.", "architecture.orchestrated.title": "Orquestrada", "architecture.orchestrated.copy": "Coordenação de contexto, especialidades e fluxos de trabalho.", "architecture.governed.title": "Governada", "architecture.governed.copy": "Permissões, políticas e limites sob autoridade do backend.", "architecture.auditable.title": "Auditável", "architecture.auditable.copy": "Registros e evidências para acompanhar operações e resultados.", "hero.title": "Conheça a <span>Superinteligência Orquestrada.</span>", "hero.copy": "A EFATÁ 777 desenvolve uma proposta brasileira de inteligência artificial multiagêntica: diferentes agentes especializados, coordenados com contexto, governança e rastreabilidade. Chamamos essa visão arquitetural de Superinteligência Orquestrada.", "hero.primary": "Explorar possibilidades", "hero.secondary": "Conhecer o ecossistema", "hero.kpi1": "frentes integradas para estratégia, capital relacional e tecnologia.", "hero.kpi2": "por cento orientado a governança, rastreabilidade e decisão.", "hero.kpi3": "ambiente privado para relacionamento qualificado e seguro.",
           "screen.title": "Governança antes da automação.", "screen.copy": "Uma camada executiva para organizar dados, agentes, documentos, risco e decisão com trilhas claras de responsabilidade.", "screen.signal1": "Estratégia aplicada", "screen.signal2": "Teses e parcerias", "screen.signal3": "Sistemas sob medida", "screen.signal4": "Perpetuação responsável", "phone.title": "Sistemas governados de <span class=\"accent\">IA</span>", "phone.copy": "Clareza estratégica, tecnologia e governança para decisão executiva.",
           "cocreation.eyebrow": "Central de Cocriação", "cocreation.title": "Onde novos negócios, startups e tecnologias ganham forma.", "cocreation.copy": "A EFATÁ 777 conecta pessoas, repertórios, capital relacional e tecnologia própria para transformar oportunidades em negócios, produtos e ecossistemas com propósito.", "cocreation.business.title": "Novos negócios", "cocreation.business.copy": "Cocriamos teses, modelos e caminhos de validação para oportunidades que precisam sair da intenção e encontrar mercado.", "cocreation.startups.title": "Startups e produtos", "cocreation.startups.copy": "Apoiamos fundadores e equipes na construção de produtos, operações e decisões orientadas por contexto, velocidade e governança.", "cocreation.technology.title": "Novas tecnologias", "cocreation.technology.copy": "Exploramos IA, agentes, automação e interfaces imersivas para criar capacidades que não existem prontas na prateleira.", "cocreation.manifesto.title": "A boutique tailor-made é o nosso modo de entrega.", "cocreation.manifesto.copy": "A central de cocriação é o nosso campo de origem: um espaço para imaginar, estruturar, testar e lançar o próximo ciclo.", "ecosystem.eyebrow": "Ecossistema EFATÁ 777", "ecosystem.title": "Uma boutique de inteligência para desafios que não aceitam prateleira.", "ecosystem.copy": "Unimos visão executiva, tecnologia própria, especialistas internos e engenharia aplicada para transformar desafios singulares em sistemas sob medida, com governança e capacidade de operação.", "pillars.eyebrow": "Pilares de atuação", "pillars.title": "Crescer com consciência, cocriação e impacto.", "pillars.copy": "A EFATÁ 777 conecta inteligência, pessoas e responsabilidade para transformar projetos em valor compartilhado.", "pillar.cocreation.title": "Cocriação", "pillar.cocreation.copy": "Construímos com empreendedores, especialistas, comunidades e parceiros, convertendo repertório coletivo em soluções vivas.", "pillar.esg.title": "ESG", "pillar.esg.copy": "Integramos governança, responsabilidade ambiental e valor social ao desenho das decisões, operações e tecnologias.", "pillar.impact.title": "Impacto Social", "pillar.impact.copy": "Orientamos inovação para ampliar oportunidades, fortalecer culturas e gerar prosperidade com inclusão e continuidade.",
           "unit.consultech.copy": "Planejamento, valuation, diagnóstico e apoio executivo para decisões de alto impacto.", "unit.consultech.a": "Business plan e estratégia", "unit.consultech.b": "Modelagens dinâmicas de valor", "unit.consultech.c": "Suporte executivo especializado", "unit.holding.copy": "Desenvolvimento de teses, novos negócios e parcerias com potencial de escala e sinergia.", "unit.holding.a": "Projetos por segmento", "unit.holding.b": "Conexão institucional", "unit.holding.c": "Construção de oportunidades", "unit.factory.copy": "Sistemas, automações e ambientes digitais seguros para gestão, decisão e escala operacional.", "unit.factory.a": "IA governada para empresas", "unit.factory.b": "Fluxos executivos inteligentes", "unit.factory.c": "Arquitetura sob medida",
@@ -48,7 +48,7 @@ const translations: Record<string, Record<string, string>> = {
         },
         es: {
           "nav.cocreation": "Cocreación", "nav.ecosystem": "Ecosistema", "nav.governance": "Gobernanza", "nav.method": "Método", "nav.contact": "Contacto", "nav.careers": "Carreras", "nav.cocreator": "Co-Creador", "nav.private": "Acceso privado", "immersive.eyebrow": "EFATÁ 777 · EXPERIENCIA INMERSIVA", "immersive.title": "Este es un entorno inmersivo.", "immersive.copy": "Elige cómo quieres iniciar tu experiencia EFATÁ 777.", "immersive.sound.cta": "Entrar con experiencia sonora", "immersive.sound.copy": "Iniciar la obra dentro de la experiencia EFATÁ 777", "immersive.silent": "Explorar sin sonido", "immersive.direct": "Ir directamente a la presentación", "immersive.headphones": "Recomendamos usar auriculares para una experiencia más inmersiva.", "lobby.eyebrow": "EFATÁ 777 · NÚCLEO INMERSIVO", "lobby.title": "Elige por dónde quieres entrar.", "lobby.copy": "Navega por el ecosistema mientras la experiencia sonora permanece activa.", "lobby.node.about": "Conoce EFATÁ 777", "lobby.node.ecosystem": "Ecosistema", "lobby.node.governance": "Gobernanza", "lobby.node.method": "Método", "lobby.node.careers": "Carreras y Talentos", "lobby.node.contact": "Contacto Estratégico", "lobby.node.platform": "Acceder a la Plataforma", "lobby.hint": "Selecciona un núcleo para entrar", "lobby.dragHint": "Toca y conduce el núcleo",
-          "level6.eyebrow": "Núcleo de Inteligencia Artificial Inmersiva", "level6.title": "Una nueva frontera: inteligencias que colaboran.", "level6.copy": "Nuestra arquitectura investiga formas de conectar agentes especializados, contexto, experiencia inmersiva, gobernanza y auditabilidad con responsabilidades y límites explícitos.", "level6.status": "Concepto arquitectónico en desarrollo · capacidades en validación", "level6.cta": "Cocrear esta frontera", "level6.layer.context": "Contexto", "level6.layer.agents": "Agentes", "level6.layer.presence": "Presencia", "level6.layer.governance": "Gobernanza", "level6.layer.impact": "Impacto", "hero.eyebrow": "EFATÁ 777 · TECNOLOGÍA BRASILEÑA", "architecture.multi.title": "Multiagente", "architecture.multi.copy": "Agentes especializados con funciones y responsabilidades definidas.", "architecture.orchestrated.title": "Orquestada", "architecture.orchestrated.copy": "Coordinación de contexto, especialidades y flujos de trabajo.", "architecture.governed.title": "Gobernada", "architecture.governed.copy": "Permisos, políticas y límites bajo la autoridad del backend.", "architecture.auditable.title": "Auditable", "architecture.auditable.copy": "Registros y evidencias para supervisar operaciones y resultados.", "hero.title": "Conoce la <span>Superinteligencia Orquestada</span>.", "hero.copy": "EFATÁ 777 desarrolla una propuesta brasileña de inteligencia artificial multiagente: agentes especializados coordinados con contexto, gobernanza y trazabilidad. Llamamos a esta visión arquitectónica Superinteligencia Orquestada.", "hero.primary": "Explorar posibilidades", "hero.secondary": "Conocer el ecosistema", "hero.kpi1": "frentes integrados para estrategia, capital relacional y tecnología.", "hero.kpi2": "por ciento orientado a gobernanza, trazabilidad y decisión.", "hero.kpi3": "entorno privado para relaciones calificadas y seguras.",
+          "level6.eyebrow": "Núcleo de Inteligencia Artificial Inmersiva", "level6.title": "Una nueva frontera: inteligencias que colaboran.", "level6.copy": "Nuestra arquitectura investiga formas de conectar agentes especializados, contexto, experiencia inmersiva, gobernanza y auditabilidad con responsabilidades y límites explícitos.", "level6.status": "Concepto arquitectónico en desarrollo · capacidades en validación", "level6.cta": "Cocrear esta frontera", "level6.layer.context": "Contexto", "level6.layer.agents": "Agentes", "level6.layer.presence": "Presencia", "level6.layer.governance": "Gobernanza", "level6.layer.impact": "Impacto", "hero.eyebrow": "EFATÁ 777 · TECNOLOGÍA BRASILEÑA", "architecture.multi.title": "Multiagente", "architecture.multi.copy": "Agentes especializados con funciones y responsabilidades definidas.", "architecture.orchestrated.title": "Orquestada", "architecture.orchestrated.copy": "Coordinación de contexto, especialidades y flujos de trabajo.", "architecture.governed.title": "Gobernada", "architecture.governed.copy": "Permisos, políticas y límites bajo la autoridad del backend.", "architecture.auditable.title": "Auditable", "architecture.auditable.copy": "Registros y evidencias para supervisar operaciones y resultados.", "hero.title": "Conozca la <span>Superinteligencia Orquestada.</span>", "hero.copy": "EFATÁ 777 desarrolla una propuesta brasileña de inteligencia artificial multiagente: agentes especializados coordinados con contexto, gobernanza y trazabilidad. Llamamos a esta visión arquitectónica Superinteligencia Orquestada.", "hero.primary": "Explorar posibilidades", "hero.secondary": "Conocer el ecosistema", "hero.kpi1": "frentes integrados para estrategia, capital relacional y tecnología.", "hero.kpi2": "por ciento orientado a gobernanza, trazabilidad y decisión.", "hero.kpi3": "entorno privado para relaciones calificadas y seguras.",
           "screen.title": "Gobernanza antes de la automatización.", "screen.copy": "Una capa ejecutiva para organizar datos, agentes, documentos, riesgos y decisiones con trazabilidad clara de responsabilidad.", "screen.signal1": "Estrategia aplicada", "screen.signal2": "Tesis y alianzas", "screen.signal3": "Sistemas a medida", "screen.signal4": "Continuidad responsable", "phone.title": "Sistemas gobernados de <span class=\"accent\">IA</span>", "phone.copy": "Claridad estratégica, tecnología y gobernanza para la decisión ejecutiva.",
           "cocreation.eyebrow": "Central de Cocreación", "cocreation.title": "Donde nuevos negocios, startups y tecnologías toman forma.", "cocreation.copy": "EFATÁ 777 conecta personas, repertorios, capital relacional y tecnología propia para transformar oportunidades en negocios, productos y ecosistemas con propósito.", "cocreation.business.title": "Nuevos negocios", "cocreation.business.copy": "Cocreamos tesis, modelos y caminos de validación para oportunidades que necesitan salir de la intención y encontrar mercado.", "cocreation.startups.title": "Startups y productos", "cocreation.startups.copy": "Apoyamos a fundadores y equipos en la construcción de productos, operaciones y decisiones orientadas por contexto, velocidad y gobernanza.", "cocreation.technology.title": "Nuevas tecnologías", "cocreation.technology.copy": "Exploramos IA, agentes, automatización e interfaces inmersivas para crear capacidades que no existen listas para usar.", "cocreation.manifesto.title": "La boutique tailor-made es nuestro modo de entrega.", "cocreation.manifesto.copy": "La central de cocreación es nuestro campo de origen: un espacio para imaginar, estructurar, probar y lanzar el próximo ciclo.", "ecosystem.eyebrow": "Ecosistema EFATÁ 777", "ecosystem.title": "Tres frentes para construir ventaja con criterio.", "ecosystem.copy": "La propuesta combina visión ejecutiva, estructura de negocios e ingeniería aplicada para proyectos que necesitan pasar del discurso a la operación con control.", "pillars.eyebrow": "Pilares de actuación", "pillars.title": "Crecer con conciencia, cocreación e impacto.", "pillars.copy": "EFATÁ 777 conecta inteligencia, personas y responsabilidad para transformar proyectos en valor compartido.", "pillar.cocreation.title": "Cocreación", "pillar.cocreation.copy": "Construimos con emprendedores, especialistas, comunidades y aliados, convirtiendo el conocimiento colectivo en soluciones vivas.", "pillar.esg.title": "ESG", "pillar.esg.copy": "Integramos gobernanza, responsabilidad ambiental y valor social en el diseño de decisiones, operaciones y tecnologías.", "pillar.impact.title": "Impacto Social", "pillar.impact.copy": "Orientamos la innovación para ampliar oportunidades, fortalecer culturas y generar prosperidad con inclusión y continuidad.",
           "unit.consultech.copy": "Planificación, valuation, diagnóstico y apoyo ejecutivo para decisiones de alto impacto.", "unit.consultech.a": "Business plan y estrategia", "unit.consultech.b": "Modelos dinámicos de valor", "unit.consultech.c": "Soporte ejecutivo especializado", "unit.holding.copy": "Desarrollo de tesis, nuevos negocios y alianzas con potencial de escala y sinergia.", "unit.holding.a": "Proyectos por segmento", "unit.holding.b": "Conexión institucional", "unit.holding.c": "Construcción de oportunidades", "unit.factory.copy": "Sistemas, automatizaciones y entornos digitales seguros para gestión, decisión y escala operativa.", "unit.factory.a": "IA gobernada para empresas", "unit.factory.b": "Flujos ejecutivos inteligentes", "unit.factory.c": "Arquitectura a medida",
@@ -59,7 +59,7 @@ const translations: Record<string, Record<string, string>> = {
         },
         en: {
           "nav.cocreation": "Co-creation", "nav.ecosystem": "Ecosystem", "nav.governance": "Governance", "nav.method": "Method", "nav.contact": "Contact", "nav.careers": "Careers", "nav.cocreator": "Co-Creator", "nav.private": "Private access", "immersive.eyebrow": "EFATÁ 777 · IMMERSIVE EXPERIENCE", "immersive.title": "This is an immersive environment.", "immersive.copy": "Choose how you want to start your EFATÁ 777 experience.", "immersive.sound.cta": "Enter with sound experience", "immersive.sound.copy": "Start the work inside the EFATÁ 777 experience", "immersive.silent": "Explore without sound", "immersive.direct": "Go directly to the presentation", "immersive.headphones": "Headphones are recommended for a more immersive experience.", "lobby.eyebrow": "EFATÁ 777 · IMMERSIVE CORE", "lobby.title": "Choose where you want to enter.", "lobby.copy": "Explore the ecosystem while the sound experience remains active.", "lobby.node.about": "Meet EFATÁ 777", "lobby.node.ecosystem": "Ecosystem", "lobby.node.governance": "Governance", "lobby.node.method": "Method", "lobby.node.careers": "Careers & Talent", "lobby.node.contact": "Strategic Contact", "lobby.node.platform": "Access Platform", "lobby.hint": "Select a core to enter", "lobby.dragHint": "Touch and guide the core",
-          "level6.eyebrow": "Immersive Artificial Intelligence Core", "level6.title": "A new frontier: intelligence that collaborates.", "level6.copy": "Our architecture explores ways of connecting specialized agents, context, immersive experiences, governance and auditability with explicit responsibilities and limits.", "level6.status": "Architectural concept under development · capabilities being validated", "level6.cta": "Co-create this frontier", "level6.layer.context": "Context", "level6.layer.agents": "Agents", "level6.layer.presence": "Presence", "level6.layer.governance": "Governance", "level6.layer.impact": "Impact", "hero.eyebrow": "EFATÁ 777 · BRAZILIAN TECHNOLOGY", "architecture.multi.title": "Multi-agent", "architecture.multi.copy": "Specialized agents with defined functions and responsibilities.", "architecture.orchestrated.title": "Orchestrated", "architecture.orchestrated.copy": "Coordination of context, specialized roles and workflows.", "architecture.governed.title": "Governed", "architecture.governed.copy": "Permissions, policies and limits enforced by the backend.", "architecture.auditable.title": "Auditable", "architecture.auditable.copy": "Records and evidence to review operations and outcomes.", "hero.title": "Explore <span>Orchestrated Superintelligence</span>.", "hero.copy": "EFATÁ 777 is developing a Brazilian multi-agent AI approach: specialized agents coordinated through context, governance and traceability. We call this architectural vision Orchestrated Superintelligence.", "hero.primary": "Explore possibilities", "hero.secondary": "Discover the ecosystem", "hero.kpi1": "integrated fronts for strategy, relationship capital and technology.", "hero.kpi2": "percent oriented to governance, traceability and decision-making.", "hero.kpi3": "private environment for qualified and secure relationships.",
+          "level6.eyebrow": "Immersive Artificial Intelligence Core", "level6.title": "A new frontier: intelligence that collaborates.", "level6.copy": "Our architecture explores ways of connecting specialized agents, context, immersive experiences, governance and auditability with explicit responsibilities and limits.", "level6.status": "Architectural concept under development · capabilities being validated", "level6.cta": "Co-create this frontier", "level6.layer.context": "Context", "level6.layer.agents": "Agents", "level6.layer.presence": "Presence", "level6.layer.governance": "Governance", "level6.layer.impact": "Impact", "hero.eyebrow": "EFATÁ 777 · BRAZILIAN TECHNOLOGY", "architecture.multi.title": "Multi-agent", "architecture.multi.copy": "Specialized agents with defined functions and responsibilities.", "architecture.orchestrated.title": "Orchestrated", "architecture.orchestrated.copy": "Coordination of context, specialized roles and workflows.", "architecture.governed.title": "Governed", "architecture.governed.copy": "Permissions, policies and limits enforced by the backend.", "architecture.auditable.title": "Auditable", "architecture.auditable.copy": "Records and evidence to review operations and outcomes.", "hero.title": "Discover <span>Orchestrated Superintelligence.</span>", "hero.copy": "EFATÁ 777 is developing a Brazilian multi-agent AI approach: specialized agents coordinated through context, governance and traceability. We call this architectural vision Orchestrated Superintelligence.", "hero.primary": "Explore possibilities", "hero.secondary": "Discover the ecosystem", "hero.kpi1": "integrated fronts for strategy, relationship capital and technology.", "hero.kpi2": "percent oriented to governance, traceability and decision-making.", "hero.kpi3": "private environment for qualified and secure relationships.",
           "screen.title": "Governance before automation.", "screen.copy": "An executive layer to organize data, agents, documents, risk and decisions with clear accountability trails.", "screen.signal1": "Applied strategy", "screen.signal2": "Theses and partnerships", "screen.signal3": "Tailored systems", "screen.signal4": "Responsible continuity", "phone.title": "Governed <span class=\"accent\">AI</span> systems", "phone.copy": "Strategic clarity, technology and governance for executive decision-making.",
           "cocreation.eyebrow": "Co-creation Central", "cocreation.title": "Where new businesses, startups and technologies take shape.", "cocreation.copy": "EFATÁ 777 connects people, expertise, relationship capital and proprietary technology to turn opportunities into purposeful businesses, products and ecosystems.", "cocreation.business.title": "New businesses", "cocreation.business.copy": "We co-create theses, models and validation paths for opportunities that need to move from intention into the market.", "cocreation.startups.title": "Startups and products", "cocreation.startups.copy": "We support founders and teams in building products, operations and decisions guided by context, speed and governance.", "cocreation.technology.title": "New technologies", "cocreation.technology.copy": "We explore AI, agents, automation and immersive interfaces to create capabilities that are not available off the shelf.", "cocreation.manifesto.title": "The tailor-made boutique is our delivery mode.", "cocreation.manifesto.copy": "The co-creation central is our field of origin: a space to imagine, structure, test and launch the next cycle.", "ecosystem.eyebrow": "EFATÁ 777 Ecosystem", "ecosystem.title": "Three fronts to build advantage with discipline.", "ecosystem.copy": "The proposition combines executive vision, business structure and applied engineering for projects that need to move from discourse into controlled operation.", "pillars.eyebrow": "Fields of action", "pillars.title": "Grow with awareness, co-creation and impact.", "pillars.copy": "EFATÁ 777 connects intelligence, people and responsibility to turn projects into shared value.", "pillar.cocreation.title": "Co-creation", "pillar.cocreation.copy": "We build with entrepreneurs, specialists, communities and partners, turning collective knowledge into living solutions.", "pillar.esg.title": "ESG", "pillar.esg.copy": "We integrate governance, environmental responsibility and social value into the design of decisions, operations and technologies.", "pillar.impact.title": "Social Impact", "pillar.impact.copy": "We direct innovation toward broader opportunities, stronger cultures and prosperity with inclusion and continuity.",
           "unit.consultech.copy": "Planning, valuation, diagnosis and executive support for high-impact decisions.", "unit.consultech.a": "Business plan and strategy", "unit.consultech.b": "Dynamic value modeling", "unit.consultech.c": "Specialized executive support", "unit.holding.copy": "Development of theses, new businesses and partnerships with scale and synergy potential.", "unit.holding.a": "Segment-based projects", "unit.holding.b": "Institutional connection", "unit.holding.c": "Opportunity building", "unit.factory.copy": "Systems, automations and secure digital environments for management, decision-making and operational scale.", "unit.factory.a": "Governed AI for companies", "unit.factory.b": "Intelligent executive workflows", "unit.factory.c": "Tailored architecture",
@@ -140,6 +140,228 @@ Object.assign(translations.en, {
   "cocreator.copy": "One Co-Creator combines strategy, product, finance, marketing, sales, operations, technology and innovation to turn ideas and challenges into hypotheses, decisions, documents, analyses and next steps.",
   "cocreator.kicker": "One agent · multiple capabilities",
   "cocreator.note": "Files, artifacts, voice, realtime and history use the governed capabilities already available in the Platform. Evolution of the Platform itself remains restricted to the administrative plan.",
+});
+
+
+/* Source-controlled localization additions for institutional content and the application. */
+Object.assign(translations.pt, {
+  "about.eyebrow": "CONHEÇA A EFATÁ 777",
+  "about.title": "Uma arquitetura de inteligências. Uma visão desenvolvida no Brasil.",
+  "about.copy": "Superinteligência Orquestrada é o nome que damos à nossa proposta de conectar agentes especializados, coordenação, governança e auditabilidade. Uma visão brasileira em desenvolvimento para transformar capacidades isoladas em colaboração orientada a resultados.",
+  "about.mission.title": "Missão",
+  "about.mission.copy": "Apoiar empresas, investidores, consultores e parceiros na estruturação de negócios mais inteligentes, governados e sustentáveis, transformando informação complexa em clareza, decisão e execução.",
+  "about.vision.title": "Visão",
+  "about.vision.copy": "Ser uma referência brasileira em consultech, AI Factory e desenvolvimento de novos negócios, construindo uma categoria própria de sistemas governados de IA para gestão, crescimento e perpetuação empresarial.",
+  "about.values.title": "Valores",
+  "about.values.copy": "Verdade operacional, governança, sustentabilidade, responsabilidade, excelência, discrição, parceria, inovação aplicada, visão de longo prazo e fé traduzida em serviço.",
+  "application.eyebrow": "Candidatura qualificada",
+  "application.title": "Construa o próximo ciclo com a EFATÁ 777.",
+  "application.copy": "Conte sua trajetória com clareza. O formulário preserva um rascunho nesta aba e só envia o currículo após consentimento explícito.",
+  "application.type.aria": "Tipo de candidatura",
+  "application.type.career": "Carreira & talentos",
+  "application.type.consultant": "Consultoria",
+  "application.name": "Nome completo",
+  "application.email": "E-mail",
+  "application.phone": "Telefone",
+  "application.location": "Localização",
+  "application.interest": "Área de interesse",
+  "application.select": "Selecione",
+  "application.option.engineering": "Engenharia & IA",
+  "application.option.partnerships": "Comercial & Parcerias",
+  "application.option.talent": "Banco de Talentos",
+  "application.option.consulting": "Consultoria de implantação de IA",
+  "application.specialty": "Especialidade de consultoria",
+  "application.context": "Contexto de atuação",
+  "application.portfolio": "LinkedIn ou portfólio",
+  "application.bio": "Sobre sua trajetória",
+  "application.resume": "Currículo (PDF, DOC ou DOCX; até 10 MB)",
+  "application.no_file": "Nenhum arquivo selecionado.",
+  "application.consent": "Concordo com a análise da candidatura para fins de triagem e contato profissional, conforme os termos de privacidade aplicáveis.",
+  "application.submit": "Enviar candidatura",
+  "application.restored": "Rascunho recuperado nesta aba. Reanexe o currículo antes de enviar.",
+  "application.required": "Revise os campos obrigatórios antes de enviar.",
+  "application.invalid_file": "Envie um currículo em PDF, DOC ou DOCX com até 10 MB.",
+  "application.sending": "Enviando…",
+  "application.sending_notice": "Enviando sua candidatura com segurança…",
+  "application.success": "Candidatura enviada. Obrigado por compartilhar sua trajetória com a EFATÁ 777.",
+  "application.error": "Não foi possível enviar agora. Seus dados permanecem no formulário; tente novamente em instantes.",
+  "music.aria": "Experiência sonora EFATÁ 777",
+  "music.title": "Experiência sonora",
+  "music.playing": "Reproduzindo obra imersiva",
+  "music.paused": "Experiência sonora pausada",
+  "music.ended": "Obra concluída",
+  "music.pause": "Pausar música",
+  "music.resume": "Reproduzir música",
+  "music.artist": "Conheça mais obras deste artista",
+  "music.track": "Faixa {index} de {total}",
+  "music.next_ready": "A próxima faixa está pronta para continuar.",
+  "music.unavailable": "Experiência sonora indisponível; seguindo sem áudio.",
+  "footer.brand": "EFATÁ 777 é uma marca da PatroAI. Todos os direitos reservados."
+});
+Object.assign(translations.es, {
+  "about.eyebrow": "CONOZCA EFATÁ 777",
+  "about.title": "Una arquitectura de inteligencias. Una visión desarrollada en Brasil.",
+  "about.copy": "Superinteligencia Orquestada es el nombre de nuestra propuesta para conectar agentes especializados, coordinación, gobernanza y auditabilidad. Una visión brasileña en desarrollo para transformar capacidades aisladas en colaboración orientada a resultados.",
+  "about.mission.title": "Misión",
+  "about.mission.copy": "Ayudar a empresas, inversores, consultores y socios a estructurar negocios más inteligentes, gobernados y sostenibles, transformando información compleja en claridad, decisiones y ejecución.",
+  "about.vision.title": "Visión",
+  "about.vision.copy": "Ser un referente brasileño en consultech, AI Factory y desarrollo de nuevos negocios, creando una categoría propia de sistemas de IA gobernados para la gestión, el crecimiento y la continuidad empresarial.",
+  "about.values.title": "Valores",
+  "about.values.copy": "Verdad operativa, gobernanza, sostenibilidad, responsabilidad, excelencia, discreción, colaboración, innovación aplicada, visión a largo plazo y fe puesta al servicio de los demás.",
+  "application.eyebrow": "Candidatura cualificada",
+  "application.title": "Construya la próxima etapa con EFATÁ 777.",
+  "application.copy": "Cuéntenos su trayectoria con claridad. El formulario conserva un borrador en esta pestaña y solo envía el currículum tras su consentimiento explícito.",
+  "application.type.aria": "Tipo de candidatura",
+  "application.type.career": "Carrera y talento",
+  "application.type.consultant": "Consultoría",
+  "application.name": "Nombre completo",
+  "application.email": "Correo electrónico",
+  "application.phone": "Teléfono",
+  "application.location": "Ubicación",
+  "application.interest": "Área de interés",
+  "application.select": "Seleccione",
+  "application.option.engineering": "Ingeniería e IA",
+  "application.option.partnerships": "Comercial y alianzas",
+  "application.option.talent": "Banco de talento",
+  "application.option.consulting": "Consultoría de implementación de IA",
+  "application.specialty": "Especialidad de consultoría",
+  "application.context": "Contexto profesional",
+  "application.portfolio": "LinkedIn o portafolio",
+  "application.bio": "Sobre su trayectoria",
+  "application.resume": "Currículum (PDF, DOC o DOCX; hasta 10 MB)",
+  "application.no_file": "Ningún archivo seleccionado.",
+  "application.consent": "Acepto el análisis de mi candidatura para evaluación y contacto profesional, conforme a los términos de privacidad aplicables.",
+  "application.submit": "Enviar candidatura",
+  "application.restored": "Borrador recuperado en esta pestaña. Adjunte de nuevo su currículum antes de enviarlo.",
+  "application.required": "Revise los campos obligatorios antes de enviar.",
+  "application.invalid_file": "Adjunte un currículum PDF, DOC o DOCX de hasta 10 MB.",
+  "application.sending": "Enviando…",
+  "application.sending_notice": "Enviando su candidatura de forma segura…",
+  "application.success": "Candidatura enviada. Gracias por compartir su trayectoria con EFATÁ 777.",
+  "application.error": "No se pudo enviar ahora. Sus datos permanecen en el formulario; inténtelo de nuevo en unos instantes.",
+  "music.aria": "Experiencia sonora EFATÁ 777",
+  "music.title": "Experiencia sonora",
+  "music.playing": "Reproduciendo la obra inmersiva",
+  "music.paused": "Experiencia sonora en pausa",
+  "music.ended": "Obra finalizada",
+  "music.pause": "Pausar música",
+  "music.resume": "Reproducir música",
+  "music.artist": "Descubra más obras de este artista",
+  "music.track": "Pista {index} de {total}",
+  "music.next_ready": "La próxima pista está lista para continuar.",
+  "music.unavailable": "Experiencia sonora no disponible; continuamos sin audio.",
+  "footer.brand": "EFATÁ 777 es una marca de PatroAI. Todos los derechos reservados."
+});
+Object.assign(translations.en, {
+  "about.eyebrow": "DISCOVER EFATÁ 777",
+  "about.title": "An architecture of intelligences. A vision developed in Brazil.",
+  "about.copy": "Orchestrated Superintelligence is the name of our approach to connecting specialized agents, coordination, governance, and auditability. An emerging Brazilian vision to transform isolated capabilities into results-driven collaboration.",
+  "about.mission.title": "Mission",
+  "about.mission.copy": "Help businesses, investors, consultants, and partners build smarter, better-governed, sustainable ventures by turning complex information into clarity, decisions, and execution.",
+  "about.vision.title": "Vision",
+  "about.vision.copy": "Become a Brazilian reference in consultech, AI Factory, and venture development, establishing a distinct category of governed AI systems for business management, growth, and continuity.",
+  "about.values.title": "Values",
+  "about.values.copy": "Operational truth, governance, sustainability, accountability, excellence, discretion, partnership, applied innovation, long-term vision, and faith expressed through service.",
+  "application.eyebrow": "Qualified application",
+  "application.title": "Build what comes next with EFATÁ 777.",
+  "application.copy": "Tell us about your background. This form saves a draft in this tab and uploads your résumé only after your explicit consent.",
+  "application.type.aria": "Application type",
+  "application.type.career": "Careers & talent",
+  "application.type.consultant": "Consulting",
+  "application.name": "Full name",
+  "application.email": "Email",
+  "application.phone": "Phone",
+  "application.location": "Location",
+  "application.interest": "Area of interest",
+  "application.select": "Select",
+  "application.option.engineering": "Engineering & AI",
+  "application.option.partnerships": "Business development & partnerships",
+  "application.option.talent": "Talent pool",
+  "application.option.consulting": "AI implementation consulting",
+  "application.specialty": "Consulting specialization",
+  "application.context": "Professional background",
+  "application.portfolio": "LinkedIn or portfolio",
+  "application.bio": "About your experience",
+  "application.resume": "Résumé (PDF, DOC or DOCX; max 10 MB)",
+  "application.no_file": "No file selected.",
+  "application.consent": "I agree to have my application reviewed for screening and professional contact under the applicable privacy terms.",
+  "application.submit": "Submit application",
+  "application.restored": "Draft restored in this tab. Please attach your résumé again before submitting.",
+  "application.required": "Review the required fields before submitting.",
+  "application.invalid_file": "Upload a PDF, DOC, or DOCX résumé up to 10 MB.",
+  "application.sending": "Submitting…",
+  "application.sending_notice": "Submitting your application securely…",
+  "application.success": "Application submitted. Thank you for sharing your background with EFATÁ 777.",
+  "application.error": "We could not submit your application now. Your information remains in the form; please try again shortly.",
+  "music.aria": "EFATÁ 777 sound experience",
+  "music.title": "Sound experience",
+  "music.playing": "Playing the immersive soundtrack",
+  "music.paused": "Sound experience paused",
+  "music.ended": "Track finished",
+  "music.pause": "Pause music",
+  "music.resume": "Play music",
+  "music.artist": "Discover more works by this artist",
+  "music.track": "Track {index} of {total}",
+  "music.next_ready": "The next track is ready to play.",
+  "music.unavailable": "Sound experience unavailable; continuing without audio.",
+  "footer.brand": "EFATÁ 777 is a PatroAI brand. All rights reserved."
+});
+
+
+/* Additional accessibility and immersion labels. */
+Object.assign(translations.pt, {
+  "copyright.title": "Aviso autoral",
+  "immersive.enjoy": "Aproveite a imersão.",
+  "copyright.copy": "As obras sonoras acessadas nesta experiência permanecem vinculadas ao autor e à plataforma de origem. Direitos autorais reservados ao autor das obras, conforme informado no destino acessado.",
+  "copyright.work": "Obra imersiva",
+  "copyright.sequence": "A reprodução acontece na própria landing após sua escolha explícita.",
+  "nav.language": "Selecionar idioma",
+  "nav.main": "Navegação principal",
+  "nav.return": "Voltar à experiência imersiva",
+  "nav.access": "Acessar Plataforma",
+  "nav.menu.open": "Abrir menu",
+  "nav.menu.close": "Fechar menu",
+  "screen.eyebrow": "Plataforma",
+  "cocreator.flow.idea": "Ideia",
+  "cocreator.flow.analysis": "Análise",
+  "cocreator.flow.creation": "Criação",
+  "cocreator.flow.execution": "Execução"
+});
+Object.assign(translations.es, {
+  "copyright.title": "Aviso de derechos de autor",
+  "immersive.enjoy": "Disfrute de la inmersión.",
+  "copyright.copy": "Las obras sonoras de esta experiencia siguen vinculadas a su autor y a la plataforma de origen. Los derechos pertenecen al autor de las obras, según se indica en el destino enlazado.",
+  "copyright.work": "Obra inmersiva",
+  "copyright.sequence": "La reproducción se realiza en esta página tras su elección explícita.",
+  "nav.language": "Seleccionar idioma",
+  "nav.main": "Navegación principal",
+  "nav.return": "Volver a la experiencia inmersiva",
+  "nav.access": "Acceder a la plataforma",
+  "nav.menu.open": "Abrir menú",
+  "nav.menu.close": "Cerrar menú",
+  "screen.eyebrow": "Plataforma",
+  "cocreator.flow.idea": "Idea",
+  "cocreator.flow.analysis": "Análisis",
+  "cocreator.flow.creation": "Creación",
+  "cocreator.flow.execution": "Ejecución"
+});
+Object.assign(translations.en, {
+  "copyright.title": "Copyright notice",
+  "immersive.enjoy": "Enjoy the immersive experience.",
+  "copyright.copy": "The sound works used in this experience remain associated with their creator and the original platform. Copyright is reserved to the artist, as stated at the linked destination.",
+  "copyright.work": "Immersive track",
+  "copyright.sequence": "Playback starts on this page only after you explicitly choose it.",
+  "nav.language": "Select language",
+  "nav.main": "Main navigation",
+  "nav.return": "Return to immersive experience",
+  "nav.access": "Access platform",
+  "nav.menu.open": "Open menu",
+  "nav.menu.close": "Close menu",
+  "screen.eyebrow": "Platform",
+  "cocreator.flow.idea": "Idea",
+  "cocreator.flow.analysis": "Analysis",
+  "cocreator.flow.creation": "Creation",
+  "cocreator.flow.execution": "Execution"
 });
 
 const STRATEGIC_WHATSAPP = "https://wa.me/5551989697605";
@@ -253,6 +475,8 @@ export function mountPremiumLanding({
     progress.style.width = `${Math.min(100, Math.max(0, percent))}%`;
   }
 
+  const t = (key: string) => translations[currentLang]?.[key] || translations.pt[key] || key;
+
   function applyLanguage(lang: string) {
     currentLang = translations[lang] ? lang : "pt";
     document.documentElement.lang =
@@ -260,6 +484,8 @@ export function mountPremiumLanding({
 
     queryAll<HTMLElement>("[data-i18n]").forEach((node) => {
       const key = node.dataset.i18n;
+      // Do not replace the selected filename with a placeholder.
+      if (node.hasAttribute("data-resume-name") && query<HTMLInputElement>("[data-application-resume]")?.files?.length) return;
       if (key && translations[currentLang]?.[key]) {
         node.textContent = translations[currentLang][key];
       }
@@ -272,6 +498,19 @@ export function mountPremiumLanding({
         node.innerHTML = translations[currentLang][key];
       }
     });
+
+    queryAll<HTMLElement>("[data-i18n-aria-label]").forEach((node) => {
+      const key = node.dataset.i18nAriaLabel;
+      if (key && translations[currentLang]?.[key]) node.setAttribute("aria-label", t(key));
+    });
+
+    if (musicDock && !musicDock.hidden && immersiveAudio && musicDockStatus) {
+      musicDockStatus.textContent = immersiveAudio.ended ? t("music.ended")
+        : immersiveAudio.paused ? t("music.paused") : t("music.playing");
+      musicDockToggle?.setAttribute("aria-label", immersiveAudio.paused ? t("music.resume") : t("music.pause"));
+    }
+    const restoredDraftNote = query<HTMLElement>("[data-application-draft-note]");
+    if (restoredDraftNote?.textContent) restoredDraftNote.textContent = t("application.restored");
 
     const localizedTitle = translations[currentLang]?.["meta.title"];
     const localizedDescription = translations[currentLang]?.["meta.description"];
@@ -1363,15 +1602,15 @@ export function mountPremiumLanding({
       if (musicDockToggle) {
         musicDockToggle.setAttribute(
           "aria-label",
-          paused ? "Reproduzir música" : "Pausar música",
+          paused ? t("music.resume") : t("music.pause"),
         );
       }
       if (musicDockStatus) {
         musicDockStatus.textContent = immersiveAudio.ended
-          ? "Obra concluída"
+          ? t("music.ended")
           : paused
-            ? "Experiência sonora pausada"
-            : "Reproduzindo obra imersiva";
+            ? t("music.paused")
+            : t("music.playing");
       }
     };
 
@@ -1496,7 +1735,7 @@ export function mountPremiumLanding({
       immersiveAudio.preload = "auto";
       immersiveAudio.load();
       if (musicDockStatus) {
-        musicDockStatus.textContent = `Faixa ${audioTrackIndex + 1} de ${audioPlaylist.length}`;
+        musicDockStatus.textContent = t("music.track").replace("{index}", String(audioTrackIndex + 1)).replace("{total}", String(audioPlaylist.length));
       }
     };
 
@@ -1739,7 +1978,7 @@ export function mountPremiumLanding({
         syncMusicDock();
       } catch {
         if (musicDockStatus) {
-          musicDockStatus.textContent = "A próxima faixa está pronta para continuar.";
+          musicDockStatus.textContent = t("music.next_ready");
         }
         syncMusicDock();
       }
@@ -1953,7 +2192,7 @@ export function mountPremiumLanding({
         } catch {
           if (musicDockStatus) {
             musicDockStatus.textContent =
-              "Experiência sonora indisponível; seguindo sem áudio.";
+              t("music.unavailable");
           }
           if (musicDock) musicDock.hidden = false;
         } finally {
@@ -2277,7 +2516,7 @@ export function mountPremiumLanding({
       });
       const restoredType = applicationTypeInput?.value === "consultant" ? "consultant" : "career";
       setApplicationType(restoredType);
-      if (applicationDraftNote) applicationDraftNote.textContent = "Rascunho recuperado nesta aba. Reanexe o currículo antes de enviar.";
+      if (applicationDraftNote) applicationDraftNote.textContent = t("application.restored");
     } catch {
       // Ignore corrupted browser session state.
     }
@@ -2342,7 +2581,7 @@ export function mountPremiumLanding({
 
   const onResumeChange = () => {
     const file = applicationResume?.files?.[0];
-    if (resumeName) resumeName.textContent = file ? `${file.name} · ${(file.size / 1024 / 1024).toFixed(1)} MB` : "Nenhum arquivo selecionado.";
+    if (resumeName) resumeName.textContent = file ? `${file.name} · ${(file.size / 1024 / 1024).toFixed(1)} MB` : t("application.no_file");
   };
   applicationResume?.addEventListener("change", onResumeChange);
   cleanups.push(() => applicationResume?.removeEventListener("change", onResumeChange));
@@ -2353,27 +2592,27 @@ export function mountPremiumLanding({
     applicationStatus.className = "application-form__status";
 
     if (!applicationForm.reportValidity()) {
-      applicationStatus.textContent = "Revise os campos obrigatórios antes de enviar.";
+      applicationStatus.textContent = t("application.required");
       applicationStatus.classList.add("is-error");
       return;
     }
 
     const file = applicationResume?.files?.[0];
     if (!file || !/\.(pdf|doc|docx)$/i.test(file.name) || file.size > 10 * 1024 * 1024) {
-      applicationStatus.textContent = "Envie um currículo em PDF, DOC ou DOCX com até 10 MB.";
+      applicationStatus.textContent = t("application.invalid_file");
       applicationStatus.classList.add("is-error");
       return;
     }
 
     applicationSubmit.disabled = true;
     applicationSubmit.setAttribute("aria-busy", "true");
-    applicationSubmit.textContent = "Enviando…";
-    applicationStatus.textContent = "Enviando sua candidatura com segurança…";
+    applicationSubmit.textContent = t("application.sending");
+    applicationStatus.textContent = t("application.sending_notice");
 
     try {
       const payload = new FormData(applicationForm);
       await apiForm<{ ok: boolean; application_id: string }>("/api/public/applications", payload);
-      applicationStatus.textContent = "Candidatura enviada. Obrigado por compartilhar sua trajetória com a EFATÁ 777.";
+      applicationStatus.textContent = t("application.success");
       applicationStatus.classList.add("is-success");
       clearApplicationDraft();
       applicationForm.reset();
@@ -2381,12 +2620,12 @@ export function mountPremiumLanding({
       onResumeChange();
     } catch {
       persistApplicationDraft();
-      applicationStatus.textContent = "Não foi possível enviar agora. Seus dados permanecem no formulário; tente novamente em instantes.";
+      applicationStatus.textContent = t("application.error");
       applicationStatus.classList.add("is-error");
     } finally {
       applicationSubmit.disabled = false;
       applicationSubmit.removeAttribute("aria-busy");
-      applicationSubmit.textContent = "Enviar candidatura";
+      applicationSubmit.textContent = t("application.submit");
     }
   };
 

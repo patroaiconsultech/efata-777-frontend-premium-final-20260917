@@ -9076,3 +9076,90 @@ body.v37-immersive-open {
     max-width: calc(100vw - 40px);
   }
 }
+
+
+/* DG-01 MAIN30 UX/i18n hotfix: fluid institutional headlines and reserved floats.
+   Overrides appended after existing premium breakpoints; no platform visual redesign. */
+.patroai-premium .hero-grid > *,
+.patroai-premium .patroai-about__shell,
+.patroai-premium .patroai-about__cards > * {
+  min-width: 0;
+}
+.patroai-premium .hero #hero-title {
+  width: 100%;
+  max-width: min(100%, 17ch);
+  font-size: clamp(2.55rem, 4.05vw, 4.75rem);
+  line-height: 1.07;
+  letter-spacing: -.035em;
+  text-wrap: balance;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
+}
+.patroai-premium .hero #hero-title span {
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
+}
+.patroai-premium .patroai-about__intro h2 {
+  max-width: min(100%, 19ch);
+  overflow-wrap: normal;
+  word-break: normal;
+  line-height: 1.09;
+}
+.patroai-premium .footer-inner {
+  flex-wrap: wrap;
+}
+.patroai-premium .footer-brand-note {
+  flex-basis: 100%;
+  color: rgba(235, 242, 242, .7);
+  font-size: .83rem;
+  line-height: 1.5;
+}
+.patroai-premium .music-dock {
+  right: max(18px, env(safe-area-inset-right, 0px));
+  bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  width: min(420px, calc(100vw - 36px));
+  max-width: calc(100vw - 36px);
+}
+body.b11-public-open .patroai-premium .music-dock,
+body:has(.patroai-premium .application-form:focus-within) .patroai-premium .music-dock {
+  display: none !important;
+}
+@media (max-width: 1120px) {
+  .patroai-premium .hero #hero-title {
+    max-width: min(100%, 19ch);
+    font-size: clamp(2.6rem, 5.5vw, 4.55rem);
+  }
+}
+@media (max-width: 820px) {
+  .patroai-premium .hero #hero-title {
+    max-width: 100%;
+    font-size: clamp(2.3rem, 6.6vw, 3.8rem);
+    line-height: 1.1;
+  }
+  .patroai-premium .patroai-about__intro h2 {
+    font-size: clamp(2rem, 6vw, 3.8rem);
+    max-width: 100%;
+  }
+  .patroai-premium .music-dock {
+    right: max(12px, env(safe-area-inset-right, 0px));
+    bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+    width: min(390px, calc(100vw - 24px));
+    max-width: calc(100vw - 24px);
+    grid-template-columns: 12px minmax(0, 1fr) 38px;
+    gap: 10px;
+    padding: 10px 12px;
+  }
+}
+@media (max-width: 620px) {
+  .patroai-premium .hero #hero-title {
+    font-size: clamp(2.05rem, 8.65vw, 3.25rem);
+    line-height: 1.12;
+    letter-spacing: -.032em;
+  }
+  .patroai-premium .hero #hero-title span { overflow-wrap: normal; }
+  .patroai-premium .music-dock { border-radius: 16px; }
+  .patroai-premium .music-dock__artist { overflow-wrap: break-word; }
+  .patroai-premium .footer { padding-bottom: calc(94px + env(safe-area-inset-bottom, 0px)); }
+}

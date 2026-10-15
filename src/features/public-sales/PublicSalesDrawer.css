@@ -131,3 +131,28 @@ body.v37-immersive-open .b11-public-entry { display: none; }
 .b12-turn { margin: 10px 0; padding: 10px; background: #101b27; border-radius: 9px; overflow-wrap: anywhere; }
 .b12-turn p { white-space: pre-wrap; margin: 6px 0; }
 .b12-whatsapp { margin-top: 12px; width: 100%; box-sizing: border-box; border-color: #25d366; background: #14533b; }
+
+
+/* DG-01 MAIN30: chat always above page chrome, below its modal layer. */
+.b11-public-entry {
+  right: max(18px, env(safe-area-inset-right, 0px));
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  z-index: 520;
+  max-width: min(330px, calc(100vw - 24px));
+  justify-content: center;
+  text-align: center;
+  white-space: normal;
+}
+@media (max-width: 620px) {
+  .b11-public-entry {
+    right: max(12px, env(safe-area-inset-right, 0px));
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    min-height: 48px;
+    font-size: 13px;
+    padding: 10px 14px;
+  }
+  .b11-public-drawer { width: 100%; }
+  .b11-public-intents, .b11-public-options {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

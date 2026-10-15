@@ -22,8 +22,10 @@ test("EFATÁ 777 public editorial identity is distinct from internal technical n
 
 test("V37 immersive audio and real private access route remain unchanged", () => {
   assert.match(immersive, /sendAudioCommand\("start", true\)/);
-  assert.match(immersive, /onClick=\{enterPrivateAccess\}[\s\S]*?Acessar plataforma/);
-  assert.match(immersive, /onClick=\{\(\) => exitTo\("#top"\)\}[\s\S]*?Ir para apresentação/);
+  assert.match(immersive, /onClick=\{enterPrivateAccess\}[\s\S]*?t\("access"\)/);
+  assert.match(immersive, /"access": "Acessar plataforma"/);
+  assert.match(immersive, /onClick=\{\(\) => exitTo\("#top"\)\}[\s\S]*?t\("presentation"\)/);
+  assert.match(immersive, /"presentation": "Ir para apresentação"/);
   assert.match(landing, /onPrivateAccess=\{\(\) => navigate\("\/access"\)\}/);
   assert.match(markup, /data-private-entry="true"/);
 });

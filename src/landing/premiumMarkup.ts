@@ -94,25 +94,25 @@ export const premiumMarkup = String.raw`
     <p class="immersive-gate__headphone-note" data-i18n="immersive.headphones">Recomendamos o uso de fones de ouvido para uma experiência mais imersiva.</p>
 
     <div class="immersive-gate__footer">
-      <button class="immersive-gate__copyright-link" type="button" aria-expanded="false" aria-controls="immersiveCopyright" data-copyright-toggle="true">
+      <button class="immersive-gate__copyright-link" type="button" aria-expanded="false" aria-controls="immersiveCopyright" data-copyright-toggle="true" data-i18n="copyright.title">
         Aviso autoral
       </button>
       <span aria-hidden="true">•</span>
-      <span>Aproveite a imersão.</span>
+      <span data-i18n="immersive.enjoy">Aproveite a imersão.</span>
     </div>
 
     <div class="immersive-gate__copyright" id="immersiveCopyright" hidden>
-      <p>
+      <p data-i18n="copyright.copy">
         As obras sonoras acessadas nesta experiência permanecem vinculadas ao autor e à plataforma de origem.
         Direitos autorais reservados ao autor das obras, conforme informado no destino acessado.
       </p>
-      <div class="immersive-gate__works" aria-label="Experiência sonora EFATÁ 777">
-        <span>Obra imersiva</span>
+      <div class="immersive-gate__works" data-i18n-aria-label="music.aria" aria-label="Experiência sonora EFATÁ 777">
+        <span data-i18n="copyright.work">Obra imersiva</span>
         <a href="https://suno.com/@daninavioficial" target="_blank" rel="noopener noreferrer">
-          Conheça mais obras deste artista
+          <span data-i18n="music.artist">Conheça mais obras deste artista</span>
         </a>
       </div>
-      <p class="immersive-gate__sequence-note">
+      <p class="immersive-gate__sequence-note" data-i18n="copyright.sequence">
         A reprodução acontece na própria landing após sua escolha explícita.
       </p>
     </div>
@@ -326,13 +326,13 @@ export const premiumMarkup = String.raw`
   src="/media/patroai-v37-landing-111hz.mp3"
 ></audio>
 
-<aside class="music-dock" id="musicDock" hidden aria-label="Experiência sonora EFATÁ 777">
+<aside class="music-dock" id="musicDock" hidden data-i18n-aria-label="music.aria" aria-label="Experiência sonora EFATÁ 777">
   <div class="music-dock__pulse" aria-hidden="true"></div>
   <div class="music-dock__copy">
-    <strong>Experiência sonora</strong>
-    <span id="musicDockStatus">Reproduzindo obra imersiva</span>
+    <strong data-i18n="music.title">Experiência sonora</strong>
+    <span id="musicDockStatus" data-i18n="music.playing">Reproduzindo obra imersiva</span>
   </div>
-  <button class="music-dock__control" id="musicDockToggle" type="button" aria-label="Pausar música">
+  <button class="music-dock__control" id="musicDockToggle" type="button" data-i18n-aria-label="music.pause" aria-label="Pausar música">
     <span data-music-icon="true" aria-hidden="true">Ⅱ</span>
   </button>
   <a
@@ -341,13 +341,13 @@ export const premiumMarkup = String.raw`
     target="_blank"
     rel="noopener noreferrer"
   >
-    Conheça mais obras deste artista
+    <span data-i18n="music.artist">Conheça mais obras deste artista</span>
   </a>
 </aside>
 
 <div class="progress" aria-hidden="true"></div>
     <header class="site-header">
-      <nav class="nav" aria-label="Navegação principal">
+      <nav class="nav" data-i18n-aria-label="nav.main" aria-label="Navegação principal">
         <a class="brand brand--official" href="#top" aria-label="EFATÁ 777">
           <span class="header-brand-mark" aria-hidden="true" data-testid="official-header-logo">
             <span class="header-brand-aura"></span>
@@ -370,7 +370,7 @@ export const premiumMarkup = String.raw`
           <a href="#contato" data-i18n="nav.contact">Contato</a>
         </div>
         <div class="nav-actions">
-          <div class="language-switch" aria-label="Selecionar idioma">
+          <div class="language-switch" data-i18n-aria-label="nav.language" aria-label="Selecionar idioma">
             <button type="button" data-lang="pt" class="active" aria-pressed="true">PT</button>
             <button type="button" data-lang="es" aria-pressed="false">ES</button>
             <button type="button" data-lang="en" aria-pressed="false">EN</button>
@@ -380,13 +380,13 @@ export const premiumMarkup = String.raw`
             class="button ghost immersive-return-button"
             type="button"
             data-return-immersive="true"
-            aria-label="Voltar à experiência imersiva"
+            data-i18n-aria-label="nav.return" aria-label="Voltar à experiência imersiva"
           >
             <span aria-hidden="true">↶</span>
-            <span>Voltar à experiência imersiva</span>
+            <span data-i18n="nav.return">Voltar à experiência imersiva</span>
           </button>
-          <a class="button ghost" href="/app" data-private-entry="true" >Acessar Plataforma</a>
-          <button class="icon-button" type="button" id="menuButton" aria-label="Abrir menu" aria-expanded="false"><span></span><span></span><span></span></button>
+          <a class="button ghost" href="/app" data-private-entry="true"  data-i18n="nav.access">Acessar Plataforma</a>
+          <button class="icon-button" type="button" id="menuButton" data-i18n-aria-label="nav.menu.open" aria-label="Abrir menu" aria-expanded="false"><span></span><span></span><span></span></button>
         </div>
       </nav>
     </header>
@@ -398,7 +398,7 @@ export const premiumMarkup = String.raw`
           <div class="hero-grid">
             <div>
               <p class="eyebrow" data-i18n="hero.eyebrow">Acesso privado e controlado</p>
-              <h1 id="hero-title" data-i18n-html="hero.title">Conheça a <span>Superinteligência Orquestrada</span>.</h1>
+              <h1 id="hero-title" data-i18n-html="hero.title">Conheça a <span>Superinteligência Orquestrada.</span></h1>
               <p class="hero-copy" data-i18n="hero.copy">A EFATÁ 777 desenvolve uma proposta brasileira de inteligência artificial multiagêntica: diferentes agentes especializados, coordenados com contexto, governança e rastreabilidade. Chamamos essa visão arquitetural de Superinteligência Orquestrada.</p>
               <div class="hero-actions">
                 <a class="button primary" href="#ecossistema" data-i18n="hero.primary">Explorar possibilidades</a>
@@ -418,7 +418,7 @@ export const premiumMarkup = String.raw`
                 <div class="screen-top"><span>EFATÁ 777 / Executive OS</span><span>private_access=true</span></div>
                 <div class="screen-body">
                   <div class="interface-panel">
-                    <p class="eyebrow">Plataforma</p>
+                    <p class="eyebrow" data-i18n="screen.eyebrow">Plataforma</p>
                     <h3 data-i18n="screen.title">Governança antes da automação.</h3>
                     <p data-i18n="screen.copy">Uma camada executiva para organizar dados, agentes, documentos, risco e decisão com trilhas claras de responsabilidade.</p>
                     <div class="signal-grid">
@@ -473,9 +473,9 @@ export const premiumMarkup = String.raw`
         <div class="section-inner patroai-about__shell">
           <div class="section-head patroai-about__intro reveal">
             <div>
-              <p class="eyebrow">CONHEÇA A EFATÁ 777</p>
-              <h2 id="patroaiAboutTitle">Uma arquitetura de inteligências. Uma visão desenvolvida no Brasil.</h2>
-              <p class="patroai-about__lead">
+              <p class="eyebrow" data-i18n="about.eyebrow">CONHEÇA A EFATÁ 777</p>
+              <h2 id="patroaiAboutTitle" data-i18n="about.title">Uma arquitetura de inteligências. Uma visão desenvolvida no Brasil.</h2>
+              <p class="patroai-about__lead" data-i18n="about.copy">
                 Superinteligência Orquestrada é o nome que damos à nossa proposta de conectar agentes especializados, coordenação, governança e auditabilidade. Uma visão brasileira em desenvolvimento para transformar capacidades isoladas em colaboração orientada a resultados.
               </p>
               <div class="efata-architecture" aria-label="Fundamentos da Superinteligência Orquestrada">
@@ -490,25 +490,25 @@ export const premiumMarkup = String.raw`
           <div class="patroai-about__cards">
             <article class="patroai-about__card reveal">
               <span class="patroai-about__index" aria-hidden="true">01</span>
-              <h3>Missão</h3>
+              <h3 data-i18n="about.mission.title">Missão</h3>
               <p>
-                Apoiar empresas, investidores, consultores e parceiros na estruturação de negócios mais inteligentes, governados e sustentáveis, transformando informação complexa em clareza, decisão e execução.
+                <span data-i18n="about.mission.copy">Apoiar empresas, investidores, consultores e parceiros na estruturação de negócios mais inteligentes, governados e sustentáveis, transformando informação complexa em clareza, decisão e execução.</span>
               </p>
             </article>
 
             <article class="patroai-about__card reveal">
               <span class="patroai-about__index" aria-hidden="true">02</span>
-              <h3>Visão</h3>
+              <h3 data-i18n="about.vision.title">Visão</h3>
               <p>
-                Ser uma referência brasileira em consultech, AI Factory e desenvolvimento de novos negócios, construindo uma categoria própria de sistemas governados de IA para gestão, crescimento e perpetuação empresarial.
+                <span data-i18n="about.vision.copy">Ser uma referência brasileira em consultech, AI Factory e desenvolvimento de novos negócios, construindo uma categoria própria de sistemas governados de IA para gestão, crescimento e perpetuação empresarial.</span>
               </p>
             </article>
 
             <article class="patroai-about__card reveal">
               <span class="patroai-about__index" aria-hidden="true">03</span>
-              <h3>Valores</h3>
+              <h3 data-i18n="about.values.title">Valores</h3>
               <p>
-                Verdade operacional, governança, sustentabilidade, responsabilidade, excelência, discrição, parceria, inovação aplicada, visão de longo prazo e fé traduzida em serviço.
+                <span data-i18n="about.values.copy">Verdade operacional, governança, sustentabilidade, responsabilidade, excelência, discrição, parceria, inovação aplicada, visão de longo prazo e fé traduzida em serviço.</span>
               </p>
             </article>
           </div>
@@ -641,25 +641,25 @@ export const premiumMarkup = String.raw`
               <span class="career-index">01</span>
               <h3 data-i18n="careers.consulting.title">Consultores de implantação de IA</h3>
               <p data-i18n="careers.consulting.copy">Executivos, especialistas de setor e profissionais experientes para diagnóstico, desenho de processos, implantação e adoção de IA.</p>
-              <a class="text-link" href="/talentos/candidatura?type=consultant&area=Consultoria%20de%20implantação%20de%20IA" data-application-open="consultant" data-application-interest="Consultoria de implantação de IA">Quero atuar como consultor →</a>
+              <a class="text-link" href="/talentos/candidatura?type=consultant&area=Consultoria%20de%20implantação%20de%20IA" data-application-open="consultant" data-application-interest="Consultoria de implantação de IA" data-i18n="careers.consulting.cta">Quero atuar como consultor →</a>
             </article>
             <article class="career-card reveal">
               <span class="career-index">02</span>
               <h3 data-i18n="careers.engineering.title">Engenharia &amp; IA</h3>
               <p data-i18n="careers.engineering.copy">Software, agentes, dados, infraestrutura, segurança e produto para construir a próxima camada do ecossistema EFATÁ 777.</p>
-              <a class="text-link" href="/talentos/candidatura?type=career&area=Engenharia%20%26%20IA" data-application-open="career" data-application-interest="Engenharia &amp; IA">Quero construir com a EFATÁ 777 →</a>
+              <a class="text-link" href="/talentos/candidatura?type=career&area=Engenharia%20%26%20IA" data-application-open="career" data-application-interest="Engenharia &amp; IA" data-i18n="careers.engineering.cta">Quero construir com a EFATÁ 777 →</a>
             </article>
             <article class="career-card reveal">
               <span class="career-index">03</span>
               <h3 data-i18n="careers.partnerships.title">Comercial &amp; Parcerias</h3>
               <p data-i18n="careers.partnerships.copy">Venda consultiva B2B, desenvolvimento de negócios e relacionamento estratégico.</p>
-              <a class="text-link" href="/talentos/candidatura?type=career&area=Comercial%20%26%20Parcerias" data-application-open="career" data-application-interest="Comercial &amp; Parcerias">Quero desenvolver negócios →</a>
+              <a class="text-link" href="/talentos/candidatura?type=career&area=Comercial%20%26%20Parcerias" data-application-open="career" data-application-interest="Comercial &amp; Parcerias" data-i18n="careers.partnerships.cta">Quero desenvolver negócios →</a>
             </article>
             <article class="career-card reveal">
               <span class="career-index">04</span>
               <h3 data-i18n="careers.talent.title">Banco de talentos</h3>
               <p data-i18n="careers.talent.copy">Perfis multidisciplinares para projetos, programas de formação e futuras oportunidades.</p>
-              <a class="text-link" href="/talentos/candidatura?type=career&area=Banco%20de%20Talentos" data-application-open="career" data-application-interest="Banco de Talentos">Entrar no banco de talentos →</a>
+              <a class="text-link" href="/talentos/candidatura?type=career&area=Banco%20de%20Talentos" data-application-open="career" data-application-interest="Banco de Talentos" data-i18n="careers.talent.cta">Entrar no banco de talentos →</a>
             </article>
           </div>
           <div class="preview-note reveal">
@@ -673,36 +673,36 @@ export const premiumMarkup = String.raw`
         <div class="section-inner">
           <div class="application-intake__head">
             <div>
-              <p class="eyebrow">Candidatura qualificada</p>
-              <h2 id="talentos-form-title">Construa o próximo ciclo com a EFATÁ 777.</h2>
-              <p>Conte sua trajetória com clareza. O formulário preserva um rascunho nesta aba e só envia o currículo após consentimento explícito.</p>
+              <p class="eyebrow" data-i18n="application.eyebrow">Candidatura qualificada</p>
+              <h2 id="talentos-form-title" data-i18n="application.title">Construa o próximo ciclo com a EFATÁ 777.</h2>
+              <p data-i18n="application.copy">Conte sua trajetória com clareza. O formulário preserva um rascunho nesta aba e só envia o currículo após consentimento explícito.</p>
             </div>
-            <div class="application-intake__switch" role="group" aria-label="Tipo de candidatura">
-              <button type="button" class="is-active" data-application-type="career" aria-pressed="true">Carreira &amp; talentos</button>
-              <button type="button" data-application-type="consultant" aria-pressed="false">Consultoria</button>
+            <div class="application-intake__switch" role="group" data-i18n-aria-label="application.type.aria" aria-label="Tipo de candidatura">
+              <button type="button" class="is-active" data-application-type="career" aria-pressed="true" data-i18n="application.type.career">Carreira &amp; talentos</button>
+              <button type="button" data-application-type="consultant" aria-pressed="false" data-i18n="application.type.consultant">Consultoria</button>
             </div>
           </div>
           <form class="application-form" data-application-form enctype="multipart/form-data" novalidate>
             <input type="hidden" name="application_type" value="career" data-application-type-input />
             <div class="application-form__grid">
-              <label><span>Nome completo</span><input name="full_name" autocomplete="name" required /></label>
-              <label><span>E-mail</span><input name="email" type="email" autocomplete="email" required /></label>
-              <label><span>Telefone</span><input name="phone" type="tel" autocomplete="tel" required /></label>
-              <label><span>Localização</span><input name="location" autocomplete="off" inputmode="text" required /></label>
-              <label class="application-form__wide"><span>Área de interesse</span><select name="interest" data-application-interest-input required><option value="">Selecione</option><option>Engenharia &amp; IA</option><option>Comercial &amp; Parcerias</option><option>Banco de Talentos</option><option>Consultoria de implantação de IA</option></select></label>
+              <label><span data-i18n="application.name">Nome completo</span><input name="full_name" autocomplete="name" required /></label>
+              <label><span data-i18n="application.email">E-mail</span><input name="email" type="email" autocomplete="email" required /></label>
+              <label><span data-i18n="application.phone">Telefone</span><input name="phone" type="tel" autocomplete="tel" required /></label>
+              <label><span data-i18n="application.location">Localização</span><input name="location" autocomplete="off" inputmode="text" required /></label>
+              <label class="application-form__wide"><span data-i18n="application.interest">Área de interesse</span><select name="interest" data-application-interest-input required><option value="" data-i18n="application.select">Selecione</option><option value="Engenharia &amp; IA" data-i18n="application.option.engineering">Engenharia &amp; IA</option><option value="Comercial &amp; Parcerias" data-i18n="application.option.partnerships">Comercial &amp; Parcerias</option><option value="Banco de Talentos" data-i18n="application.option.talent">Banco de Talentos</option><option value="Consultoria de implantação de IA" data-i18n="application.option.consulting">Consultoria de implantação de IA</option></select></label>
               <div class="application-form__consultant application-form__wide" data-consultant-fields hidden>
-                <label><span>Especialidade de consultoria</span><input name="consulting_specialty" autocomplete="organization-title" /></label>
-                <label><span>Contexto de atuação</span><input name="consulting_context" autocomplete="off" /></label>
+                <label><span data-i18n="application.specialty">Especialidade de consultoria</span><input name="consulting_specialty" autocomplete="organization-title" /></label>
+                <label><span data-i18n="application.context">Contexto de atuação</span><input name="consulting_context" autocomplete="off" /></label>
               </div>
-              <label class="application-form__wide"><span>LinkedIn ou portfólio</span><input name="portfolio_url" type="url" autocomplete="url" /></label>
-              <label class="application-form__wide"><span>Sobre sua trajetória</span><textarea name="message" required></textarea></label>
-              <label class="application-upload application-form__wide"><span>Currículo (PDF, DOC ou DOCX; até 10 MB)</span><input type="file" name="resume" data-application-resume accept=".pdf,.doc,.docx" required /><em data-resume-name>Nenhum arquivo selecionado.</em></label>
-              <label class="application-consent application-form__wide"><input type="checkbox" name="consent" required /><span>Concordo com a análise da candidatura para fins de triagem e contato profissional, conforme os termos de privacidade aplicáveis.</span></label>
+              <label class="application-form__wide"><span data-i18n="application.portfolio">LinkedIn ou portfólio</span><input name="portfolio_url" type="url" autocomplete="url" /></label>
+              <label class="application-form__wide"><span data-i18n="application.bio">Sobre sua trajetória</span><textarea name="message" required></textarea></label>
+              <label class="application-upload application-form__wide"><span data-i18n="application.resume">Currículo (PDF, DOC ou DOCX; até 10 MB)</span><input type="file" name="resume" data-application-resume accept=".pdf,.doc,.docx" required /><em data-resume-name data-i18n="application.no_file">Nenhum arquivo selecionado.</em></label>
+              <label class="application-consent application-form__wide"><input type="checkbox" name="consent" required /><span data-i18n="application.consent">Concordo com a análise da candidatura para fins de triagem e contato profissional, conforme os termos de privacidade aplicáveis.</span></label>
               <input class="application-honeypot" type="text" name="website" autocomplete="off" tabindex="-1" aria-hidden="true" />
             </div>
             <div class="application-form__footer">
               <p class="application-form__status" data-application-status data-application-draft-note role="status"></p>
-              <button class="button primary" type="submit" data-application-submit>Enviar candidatura</button>
+              <button class="button primary" type="submit" data-application-submit data-i18n="application.submit">Enviar candidatura</button>
             </div>
           </form>
         </div>
@@ -719,13 +719,13 @@ export const premiumMarkup = String.raw`
               decisões, documentos, análises e próximos passos.
             </p>
             <div class="hero-actions">
-              <a class="button primary" href="/access" data-private-entry="true">Acessar Plataforma</a>
+              <a class="button primary" href="/access" data-private-entry="true" data-i18n="nav.access">Acessar Plataforma</a>
             </div>
           </div>
           <div class="migration-card reveal">
             <span class="migration-kicker" data-i18n="cocreator.kicker">Um agente · múltiplas capacidades</span>
             <div class="migration-flow">
-              <span>Ideia</span><i></i><span>Análise</span><i></i><span>Criação</span><i></i><span>Execução</span>
+              <span data-i18n="cocreator.flow.idea">Ideia</span><i></i><span data-i18n="cocreator.flow.analysis">Análise</span><i></i><span data-i18n="cocreator.flow.creation">Criação</span><i></i><span data-i18n="cocreator.flow.execution">Execução</span>
             </div>
             <p data-i18n="cocreator.note">
               Arquivos, artefatos, voz, realtime e histórico usam as capacidades governadas
@@ -766,6 +766,7 @@ export const premiumMarkup = String.raw`
         <span data-i18n="footer.left">EFATÁ 777. Consultech, Holding e AI Factory.</span>
         <span class="footer-links"><a href="#legal" data-i18n="footer.privacy">Privacidade e termos</a><a href="#contato" data-i18n="footer.contact">Contato</a></span>
         <span data-i18n="footer.right">Acesso privado. Proposta sob análise.</span>
+        <span class="footer-brand-note" data-i18n="footer.brand">EFATÁ 777 é uma marca da PatroAI. Todos os direitos reservados.</span>
       </div>
     </footer>
 `;

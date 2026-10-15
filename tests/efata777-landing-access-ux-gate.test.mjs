@@ -15,10 +15,12 @@ test("immersive primary CTA opens presentation and private access remains availa
   const bottom = immersive.match(/className="v37-access"[\s\S]*?<\/button>/)?.[0] || "";
   const header = immersive.match(/<header className="v37-lobby__header">[\s\S]*?<\/header>/)?.[0] || "";
   assert.match(bottom, /onClick=\{\(\) => exitTo\("#top"\)\}/);
-  assert.match(bottom, /Ir para apresentação/);
+  assert.match(bottom, /t\("presentation"\)/);
+  assert.match(immersive, /"presentation": "Ir para apresentação"/);
   assert.doesNotMatch(bottom, /onPrivateAccess|enterPrivateAccess/);
   assert.match(header, /onClick=\{enterPrivateAccess\}/);
-  assert.match(header, /Acessar plataforma/);
+  assert.match(header, /t\("access"\)/);
+  assert.match(immersive, /"access": "Acessar plataforma"/);
   assert.match(landing, /navigate\("\/access"\)/);
 });
 

@@ -11,6 +11,7 @@
  * - /access contract remains untouched.
  */
 import { useEffect, useRef, useState } from "react";
+import { useLandingLanguage, type LandingLanguage } from "./useLandingLanguage";
 
 type V37ImmersiveProps = {
   onPrivateAccess: () => void | Promise<void>;
@@ -31,6 +32,98 @@ type AudioResultDetail = {
   ok: boolean;
   playing: boolean;
   error?: string;
+};
+
+const immersiveCopy: Record<LandingLanguage, Record<string, string>> = {
+  "pt": {
+    "eyebrow": "EFATÁ 777 · EXPERIÊNCIA IMERSIVA",
+    "title": "Esta é uma página imersiva.",
+    "copy": "A experiência combina imagem, atmosfera e uma faixa sonora reativa. Escolha como deseja entrar.",
+    "sound": "Entrar com som",
+    "silent": "Entrar sem som",
+    "note": "Você poderá alterar o áudio depois.",
+    "lobby": "EFATÁ 777 · NÚCLEO IMERSIVO",
+    "access": "Acessar plataforma",
+    "presentation": "Ir para apresentação",
+    "dock": "Controle da experiência sonora",
+    "pause": "Pausar música",
+    "play": "Reproduzir música",
+    "track": "FAIXA IMERSIVA",
+    "audioError": "Não foi possível iniciar o áudio. Toque no controle para tentar novamente.",
+    "toggleError": "Não foi possível alterar o áudio.",
+    "experience": "Experiência imersiva EFATÁ 777",
+    "core": "Núcleo audiovisual EFATÁ 777",
+    "video": "Vídeo em loop do núcleo EFATÁ 777",
+    "routes": "Rotas da experiência imersiva"
+  },
+  "es": {
+    "eyebrow": "EFATÁ 777 · EXPERIENCIA INMERSIVA",
+    "title": "Esta es una página inmersiva.",
+    "copy": "La experiencia combina imágenes, atmósfera y una banda sonora reactiva. Elija cómo desea entrar.",
+    "sound": "Entrar con sonido",
+    "silent": "Entrar sin sonido",
+    "note": "Podrá cambiar el audio después.",
+    "lobby": "EFATÁ 777 · NÚCLEO INMERSIVO",
+    "access": "Acceder a la plataforma",
+    "presentation": "Ir a la presentación",
+    "dock": "Control de la experiencia sonora",
+    "pause": "Pausar música",
+    "play": "Reproducir música",
+    "track": "PISTA INMERSIVA",
+    "audioError": "No se pudo iniciar el audio. Toque el control para intentarlo de nuevo.",
+    "toggleError": "No se pudo cambiar el audio.",
+    "experience": "Experiencia inmersiva EFATÁ 777",
+    "core": "Núcleo audiovisual EFATÁ 777",
+    "video": "Vídeo en bucle del núcleo EFATÁ 777",
+    "routes": "Rutas de la experiencia inmersiva"
+  },
+  "en": {
+    "eyebrow": "EFATÁ 777 · IMMERSIVE EXPERIENCE",
+    "title": "This is an immersive page.",
+    "copy": "The experience combines imagery, atmosphere, and a reactive soundtrack. Choose how you would like to enter.",
+    "sound": "Enter with sound",
+    "silent": "Enter without sound",
+    "note": "You can change the audio later.",
+    "lobby": "EFATÁ 777 · IMMERSIVE CORE",
+    "access": "Access platform",
+    "presentation": "Go to presentation",
+    "dock": "Sound experience controls",
+    "pause": "Pause music",
+    "play": "Play music",
+    "track": "IMMERSIVE TRACK",
+    "audioError": "Audio could not start. Tap the control to try again.",
+    "toggleError": "Could not change audio playback.",
+    "experience": "EFATÁ 777 immersive experience",
+    "core": "EFATÁ 777 audiovisual core",
+    "video": "Looping video of the EFATÁ 777 core",
+    "routes": "Immersive experience navigation"
+  }
+};
+const immersiveNodeLabels: Record<LandingLanguage, readonly string[]> = {
+  "pt": [
+    "Cocriação",
+    "Governança",
+    "ESG",
+    "ROI",
+    "Ecossistema",
+    "Contato"
+  ],
+  "es": [
+    "Cocreación",
+    "Gobernanza",
+    "ESG",
+    "ROI",
+    "Ecosistema",
+    "Contacto"
+  ],
+  "en": [
+    "Co-creation",
+    "Governance",
+    "ESG",
+    "ROI",
+    "Ecosystem",
+    "Contact"
+  ]
 };
 
 const EXIT_DURATION_MS = 820;
@@ -89,6 +182,8 @@ function sendAudioCommand(action: AudioCommandAction, reset = false) {
 }
 
 export function V37Immersive({ onPrivateAccess }: V37ImmersiveProps) {
+  const lang = useLandingLanguage();
+  const t = (key: string) => immersiveCopy[lang][key];
   const [stage, setStage] = useState<Stage>("intro");
   const [playing, setPlaying] = useState(false);
   const [audioError, setAudioError] = useState("");
@@ -195,8 +290,7 @@ export function V37Immersive({ onPrivateAccess }: V37ImmersiveProps) {
     setAudioError(
       result.ok
         ? ""
-        : result.error ||
-          "Não foi possível iniciar o áudio. Toque no controle para tentar novamente.",
+        : result.error || t("audioError"),
     );
     setStage("lobby");
   };
@@ -204,7 +298,7 @@ export function V37Immersive({ onPrivateAccess }: V37ImmersiveProps) {
   const toggleAudio = async () => {
     const result = await sendAudioCommand("toggle");
     setPlaying(result.playing);
-    setAudioError(result.ok ? "" : result.error || "Não foi possível alterar o áudio.");
+    setAudioError(result.ok ? "" : result.error || t("toggleError"));
   };
 
   if (stage === "content") return null;
@@ -213,7 +307,7 @@ export function V37Immersive({ onPrivateAccess }: V37ImmersiveProps) {
     <section
       className={`v37-immersive v38-immersive v37-immersive--${stage}`}
       data-audio-active={playing ? "true" : "false"}
-      aria-label="Experiência imersiva EFATÁ 777"
+      aria-label={t("experience")}
     >
       <div className="v37-atmosphere" aria-hidden="true" />
 
@@ -236,11 +330,10 @@ export function V37Immersive({ onPrivateAccess }: V37ImmersiveProps) {
             src="/assets/patroai-logo-integrated.png"
             alt=""
           />
-          <p className="v38-entry__eyebrow">EFATÁ 777 · EXPERIÊNCIA IMERSIVA</p>
-          <h1 id="v38-entry-title">Esta é uma página imersiva.</h1>
+          <p className="v38-entry__eyebrow">{t("eyebrow")}</p>
+          <h1 id="v38-entry-title">{t("title")}</h1>
           <p className="v38-entry__copy">
-            A experiência combina imagem, atmosfera e uma faixa sonora reativa.
-            Escolha como deseja entrar.
+            {t("copy")}
           </p>
           <div className="v38-entry__actions">
             <button
@@ -249,17 +342,17 @@ export function V37Immersive({ onPrivateAccess }: V37ImmersiveProps) {
               onClick={() => void enterImmersive(true)}
             >
               <span aria-hidden="true">♪</span>
-              <strong>Entrar com som</strong>
+              <strong>{t("sound")}</strong>
             </button>
             <button
               className="v38-entry__silent"
               type="button"
               onClick={() => void enterImmersive(false)}
             >
-              Entrar sem som
+              {t("silent")}
             </button>
           </div>
-          <small>Você poderá alterar o áudio depois.</small>
+          <small>{t("note")}</small>
         </div>
       ) : null}
 
@@ -280,9 +373,9 @@ export function V37Immersive({ onPrivateAccess }: V37ImmersiveProps) {
         }}
       >
         <header className="v37-lobby__header">
-          <span>EFATÁ 777 · NÚCLEO IMERSIVO</span>
+          <span>{t("lobby")}</span>
           <button type="button" onClick={enterPrivateAccess}>
-            Acessar plataforma
+            {t("access")}
           </button>
         </header>
 
@@ -290,11 +383,11 @@ export function V37Immersive({ onPrivateAccess }: V37ImmersiveProps) {
           ref={coreRef}
           className="v37-core"
           role="img"
-          aria-label="Núcleo audiovisual EFATÁ 777"
+          aria-label={t("core")}
         >
           <span className="v37-core__glow" aria-hidden="true" />
           <video
-            aria-label="Vídeo em loop do núcleo EFATÁ 777"
+            aria-label={t("video")}
             autoPlay
             muted
             loop
@@ -305,7 +398,7 @@ export function V37Immersive({ onPrivateAccess }: V37ImmersiveProps) {
           />
         </div>
 
-        <nav className="v37-lobby__nodes" aria-label="Rotas da experiência imersiva">
+        <nav className="v37-lobby__nodes" aria-label={t("routes")}>
           {nodes.map(([index, label, target], nodeIndex) => (
             <button
               key={label}
@@ -314,7 +407,7 @@ export function V37Immersive({ onPrivateAccess }: V37ImmersiveProps) {
               onClick={() => exitTo(target)}
             >
               <em>{index}</em>
-              <span>{label}</span>
+              <span>{immersiveNodeLabels[lang][nodeIndex]}</span>
             </button>
           ))}
         </nav>
@@ -324,21 +417,21 @@ export function V37Immersive({ onPrivateAccess }: V37ImmersiveProps) {
           type="button"
           onClick={() => exitTo("#top")}
         >
-          Ir para apresentação
+          {t("presentation")}
         </button>
 
         <div
           className="v37-dock"
-          aria-label="Controle da experiência sonora"
+          aria-label={t("dock")}
         >
           <button
             type="button"
             onClick={() => void toggleAudio()}
-            aria-label={playing ? "Pausar música" : "Reproduzir música"}
+            aria-label={playing ? t("pause") : t("play")}
           >
             {playing ? "Ⅱ" : "▶"}
           </button>
-          <span>{audioError || "FAIXA IMERSIVA"}</span>
+          <span>{audioError || t("track")}</span>
         </div>
       </div>
     </section>
