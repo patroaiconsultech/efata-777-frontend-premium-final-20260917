@@ -313,6 +313,7 @@ export default function AppConsole() {
   const realtimePeerRef = useRef<RTCPeerConnection | null>(null);
   const realtimeStreamRef = useRef<MediaStream | null>(null);
   const realtimeChannelRef = useRef<RTCDataChannel | null>(null);
+  const realtimeConnectionWatchdogRef = useRef<number | null>(null);
   const realtimeSessionIdRef = useRef("");
   const realtimeSessionThreadRef = useRef("");
   const realtimeSeenFinalIdsRef = useRef<Set<string>>(new Set());
@@ -1044,6 +1045,10 @@ export default function AppConsole() {
 
   function stopRealtimeSession() {
     realtimeLifecycleRef.current += 1;
+    if (realtimeConnectionWatchdogRef.current !== null) {
+      window.clearTimeout(realtimeConnectionWatchdogRef.current);
+      realtimeConnectionWatchdogRef.current = null;
+    }
     realtimeOutputAbortRef.current?.abort();
     realtimeOutputAbortRef.current = null;
     stopRealtimeSegmentAudio();
@@ -1201,8 +1206,14 @@ export default function AppConsole() {
     const eventType = String(event.type || "");
     if (eventType === "input_audio_buffer.speech_started") {
       setRealtimeState("interrupted");
+      setNotice("Fala detectada pelo provedor; aguardando fim do turno.");
       stopRealtimeSegmentAudio();
       setRealtimePartialTranscript("");
+      return;
+    }
+    if (eventType === "input_audio_buffer.speech_stopped") {
+      setRealtimeState("transcribing");
+      setNotice("Fim da fala detectado; aguardando transcrição.");
       return;
     }
     if (eventType === "conversation.item.input_audio_transcription.delta") {
@@ -1213,6 +1224,16 @@ export default function AppConsole() {
       }
       return;
     }
+    if (eventType === "conversation.item.input_audio_transcription.failed") {
+      setRealtimeState("error");
+      setError("O serviço de voz não conseguiu transcrever a fala. Encerre e tente novamente.");
+      return;
+    }
+    if (eventType === "error") {
+      setRealtimeState("error");
+      setError("O provedor Realtime comunicou uma falha. Encerre e tente novamente.");
+      return;
+    }
     if (eventType !== "conversation.item.input_audio_transcription.completed") {
       return;
     }
@@ -1221,6 +1242,7 @@ export default function AppConsole() {
     const transcript = String(event.transcript || "").trim();
     if (!eventId || !itemId || !transcript) return;
 
+    setNotice("Transcrição final recebida; encaminhando o turno ao agente.");
     const dedupeId = `${itemId}:${eventId}`;
     if (realtimeSeenFinalIdsRef.current.has(dedupeId)) return;
     realtimeSeenFinalIdsRef.current.add(dedupeId);
@@ -1305,7 +1327,19 @@ export default function AppConsole() {
     };
     channel.onopen = () => {
       if (isCurrentAttempt() && realtimeChannelRef.current === channel) {
+        if (realtimeConnectionWatchdogRef.current !== null) {
+          window.clearTimeout(realtimeConnectionWatchdogRef.current);
+          realtimeConnectionWatchdogRef.current = null;
+        }
         setRealtimeState("listening");
+        setNotice("Canal de dados Realtime aberto. Aguardando sua fala.");
+      }
+    };
+    channel.onerror = () => {
+      if (isCurrentAttempt() && realtimeChannelRef.current === channel) {
+        stopRealtimeSession();
+        setRealtimeState("error");
+        setError("O canal de dados do Realtime falhou. A chamada não está ouvindo.");
       }
     };
     channel.onclose = () => {
@@ -1315,6 +1349,8 @@ export default function AppConsole() {
         realtimeSessionIdRef.current
       ) {
         stopRealtimeSession();
+        setRealtimeState("error");
+        setError("O canal de dados do Realtime foi encerrado.");
       }
     };
 
@@ -1325,6 +1361,8 @@ export default function AppConsole() {
         ["failed", "closed"].includes(peer.connectionState)
       ) {
         stopRealtimeSession();
+        setRealtimeState("error");
+        setError("A conexão WebRTC falhou ou foi encerrada.");
       }
     };
 
@@ -1367,9 +1405,26 @@ export default function AppConsole() {
       realtimeSessionThreadRef.current = sessionThreadId;
       await peer.setRemoteDescription({ type: "answer", sdp: call.sdp });
       if (!isCurrentAttempt()) return;
-      setRealtimeState("connected");
-      setNotice(`Realtime conectado com ${call.agent_name}.`);
-      setRealtimeState("listening");
+      // SDP accepted is not proof of a working data channel. "Ouvindo" only
+      // becomes true after channel.onopen, not after an HTTP 200 response.
+      if (channel.readyState === "open") {
+        setRealtimeState("listening");
+        setNotice(`Realtime conectado com ${call.agent_name}.`);
+      } else {
+        setRealtimeState("connecting");
+        setNotice(`Aguardando conexão de áudio com ${call.agent_name}...`);
+        realtimeConnectionWatchdogRef.current = window.setTimeout(() => {
+          realtimeConnectionWatchdogRef.current = null;
+          if (
+            !isCurrentAttempt() ||
+            realtimeChannelRef.current !== channel ||
+            channel.readyState === "open"
+          ) return;
+          stopRealtimeSession();
+          setRealtimeState("error");
+          setError("O canal de dados Realtime não abriu em 15 segundos. A fala não está sendo processada.");
+        }, 15000);
+      }
     } catch (err) {
       const name =
         err && typeof err === "object" && "name" in err
