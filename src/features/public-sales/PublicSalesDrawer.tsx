@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { createPortal } from "react-dom";
 import { publicEnv } from "../../config/runtime";
 import "./PublicSalesDrawer.css";
@@ -18,6 +18,27 @@ type GuidedMessage = {
   experience: { mode: "editorial"; step: number; total_steps: number; free_question_available: false };
   summary?: GuidedSummary | null;
 };
+type Registration = {
+  name: string; whatsapp: string; email: string; company: string; consent: boolean;
+};
+type AiTurn = { question: string; answer: string };
+type RegistrationResult = { registered: boolean; remaining_questions: number; contact_storage: string; notice: string };
+type AiResult = { answer: string; remaining_questions: number; handoff_recommended: boolean };
+const PATROAI_WHATSAPP = "5551989697605";
+
+function whatsappLink(registration: Registration, turns: AiTurn[], summary: GuidedSummary | null | undefined): string {
+  const lines = [
+    "Olá, equipe PatroAI! Conheci a EFATA 777 e gostaria de conversar.",
+    `Nome: ${registration.name}`,
+    `WhatsApp: ${registration.whatsapp}`,
+    `E-mail: ${registration.email}`,
+    registration.company.trim() ? `Empresa: ${registration.company}` : "",
+    summary?.highlights[0] ? `Interesse inicial: ${summary.highlights[0]}` : "",
+    turns.length ? `Assunto da conversa: ${turns[turns.length - 1].question}` : "",
+  ].filter(Boolean);
+  return `https://wa.me/${PATROAI_WHATSAPP}?text=${encodeURIComponent(lines.join("\n"))}`;
+}
+
 type NewSession = {
   session_id: string;
   expires_at: string;
@@ -72,6 +93,14 @@ export function PublicSalesDrawer() {
   const [error, setError] = useState("");
   const [copyStatus, setCopyStatus] = useState("");
   const [lastFailedAction, setLastFailedAction] = useState<string | null>(null);
+  const [registration, setRegistration] = useState<Registration>({
+    name: "", whatsapp: "", email: "", company: "", consent: false,
+  });
+  const [registered, setRegistered] = useState(false);
+  const [turns, setTurns] = useState<AiTurn[]>([]);
+  const [question, setQuestion] = useState("");
+  const [remaining, setRemaining] = useState(3);
+
   const dialogRef = useRef<HTMLElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const previousFocus = useRef<HTMLElement | null>(null);
@@ -85,6 +114,8 @@ export function PublicSalesDrawer() {
     setBusy(false);
     setOpen(false);
     setError("");
+    setRegistration({ name: "", whatsapp: "", email: "", company: "", consent: false });
+    setRegistered(false); setTurns([]); setRemaining(3); setQuestion("");
     previousFocus.current?.focus();
   }, []);
 
@@ -129,6 +160,8 @@ export function PublicSalesDrawer() {
     setLastFailedAction(null);
     setError("");
     setCopyStatus("");
+    setRegistration({ name: "", whatsapp: "", email: "", company: "", consent: false });
+    setRegistered(false); setTurns([]); setRemaining(3); setQuestion("");
     setOpen(true);
   }
 
@@ -188,6 +221,8 @@ export function PublicSalesDrawer() {
     requestId.current += 1;
     setBusy(false); setSelected(null); setSessionId("");
     setCurrent(null); setLastFailedAction(null); setError(""); setCopyStatus("");
+    setRegistration({ name: "", whatsapp: "", email: "", company: "", consent: false });
+    setRegistered(false); setTurns([]); setRemaining(3); setQuestion("");
   }
 
   async function copySummary() {
@@ -207,6 +242,57 @@ export function PublicSalesDrawer() {
     }
   }
 
+  async function submitRegistration(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (busy || !sessionId || !current?.summary || !registration.consent) return;
+    const controller = new AbortController();
+    pending.current?.abort(); pending.current = controller;
+    const id = ++requestId.current;
+    setBusy(true); setError("");
+    try {
+      const response = await postPublic<RegistrationResult>(`/${encodeURIComponent(sessionId)}/register`, {
+        name: registration.name,
+        whatsapp: registration.whatsapp,
+        email: registration.email,
+        company: registration.company || null,
+        consent_to_contact: registration.consent,
+      }, controller.signal);
+      if (requestId.current !== id || !response.registered) return;
+      setRegistered(true); setRemaining(response.remaining_questions);
+    } catch (reason) {
+      if (!controller.signal.aborted && requestId.current === id) setError(friendlyError(reason));
+    } finally {
+      if (requestId.current === id) setBusy(false);
+    }
+  }
+
+  async function sendQuestion(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const text = question.trim();
+    if (busy || !sessionId || !registered || remaining < 1 || text.length < 3) return;
+    const controller = new AbortController();
+    pending.current?.abort(); pending.current = controller;
+    const id = ++requestId.current;
+    setBusy(true); setError("");
+    try {
+      const response = await postPublic<AiResult>(`/${encodeURIComponent(sessionId)}/ask`, {
+        question: text,
+      }, controller.signal);
+      if (requestId.current !== id) return;
+      setTurns((old) => [...old, { question: text, answer: response.answer }]);
+      setRemaining(response.remaining_questions);
+      setQuestion("");
+    } catch (reason) {
+      if (!controller.signal.aborted && requestId.current === id) {
+        setError(friendlyError(reason));
+        // Backend reserves quota before provider calls; never promise free retries.
+      }
+    } finally {
+      if (requestId.current === id) setBusy(false);
+    }
+  }
+
+  const b12Available = import.meta.env.VITE_PUBLIC_SALES_B12_ENABLED === "true";
   const isEnabled = import.meta.env.VITE_PUBLIC_SALES_ENABLED === "true";
   if (!isEnabled || !BASE || typeof document === "undefined") return null;
 
@@ -232,8 +318,9 @@ export function PublicSalesDrawer() {
                 onClick={close} aria-label="Fechar orientação">×</button>
             </header>
             <p id="b11-public-description" className="b11-public-intro">
-              Em poucas escolhas, organizamos uma orientação inicial. Sem cadastro, sem coleta de
-              documentos e sem diagnóstico jurídico ou técnico definitivo.
+              {b12Available
+                ? "Em poucas escolhas, oferecemos uma orientação gratuita, sem cadastro. Ao final, você pode optar por uma conversa breve com IA e contato com a PatroAI."
+                : "Em poucas escolhas, organizamos uma orientação inicial. Sem cadastro, sem coleta de documentos e sem diagnóstico jurídico ou técnico definitivo."}
             </p>
             <div className="b11-public-body" aria-busy={busy}>
               {!current && (
@@ -275,6 +362,85 @@ export function PublicSalesDrawer() {
                       <p>{current.summary.notice}</p>
                       <button type="button" onClick={() => void copySummary()}>Copiar orientação</button>
                       {copyStatus && <p role="status">{copyStatus}</p>}
+                      {b12Available && (
+                        <div className="b12-stage">
+                          <h3>Quer conversar um pouco mais com a EFATA 777?</h3>
+                          <p>O atendimento com IA é opcional: até 3 perguntas curtas e, se desejar,
+                            encaminhamento ao WhatsApp da equipe PatroAI.</p>
+                          {!registered ? (
+                            <form className="b12-form" onSubmit={(event) => void submitRegistration(event)}>
+                              <label>Nome completo
+                                <input required minLength={3} maxLength={100} autoComplete="name"
+                                  value={registration.name}
+                                  onChange={(event) => setRegistration((r) => ({ ...r, name: event.target.value }))} />
+                              </label>
+                              <label>WhatsApp com DDD
+                                <input required minLength={10} maxLength={25} autoComplete="tel" type="tel"
+                                  value={registration.whatsapp}
+                                  onChange={(event) => setRegistration((r) => ({ ...r, whatsapp: event.target.value }))} />
+                              </label>
+                              <label>E-mail
+                                <input required maxLength={254} type="email" autoComplete="email"
+                                  value={registration.email}
+                                  onChange={(event) => setRegistration((r) => ({ ...r, email: event.target.value }))} />
+                              </label>
+                              <label>Empresa (opcional)
+                                <input maxLength={100} autoComplete="organization"
+                                  value={registration.company}
+                                  onChange={(event) => setRegistration((r) => ({ ...r, company: event.target.value }))} />
+                              </label>
+                              <label className="b12-consent">
+                                <input type="checkbox" required checked={registration.consent}
+                                  onChange={(event) => setRegistration((r) => ({ ...r, consent: event.target.checked }))} />
+                                Autorizo usar meus dados para preparar meu contato voluntário com a equipe PatroAI.
+                              </label>
+                              <p className="b12-privacy">
+                                Não criamos conta privada nem salvamos seus dados de contato no servidor nesta etapa.
+                                Os dados ficam nesta página e só chegam à equipe quando você enviar a mensagem no WhatsApp.
+                              </p>
+                              <button type="submit" disabled={busy || !registration.consent}>
+                                Liberar 3 perguntas
+                              </button>
+                            </form>
+                          ) : (
+                            <>
+                              <p role="status">Cadastro temporário confirmado. Restam {remaining} perguntas.</p>
+                              <div className="b12-chat" aria-live="polite">
+                                {turns.map((turn, index) => (
+                                  <div className="b12-turn" key={index}>
+                                    <p><strong>Você:</strong> {turn.question}</p>
+                                    <p><strong>EFATA 777:</strong> {turn.answer}</p>
+                                  </div>
+                                ))}
+                              </div>
+                              {remaining > 0 && (
+                                <form className="b12-form" onSubmit={(event) => void sendQuestion(event)}>
+                                  <label>Sua pergunta
+                                    <textarea rows={3} minLength={3} maxLength={350} required
+                                      value={question} onChange={(event) => setQuestion(event.target.value)}
+                                      placeholder="Como a EFATA 777 pode apoiar minha empresa?" />
+                                  </label>
+                                  <p className="b12-privacy">
+                                    Sua pergunta e o histórico breve são enviados ao provedor de IA
+                                    para gerar a resposta. Não inclua documentos, senhas ou dados sensíveis.
+                                  </p>
+                                  <button type="submit" disabled={busy || question.trim().length < 3}>
+                                    Perguntar à EFATA 777
+                                  </button>
+                                </form>
+                              )}
+                              {remaining === 0 && <p>Concluímos esta conversa breve. Continue com a equipe PatroAI.</p>}
+                              <a className="b12-whatsapp"
+                                href={whatsappLink(registration, turns, current.summary)}
+                                target="_blank" rel="noopener noreferrer">
+                                Continuar pelo WhatsApp com a PatroAI
+                              </a>
+                              <p className="b12-privacy">O WhatsApp abrirá com a mensagem preparada.
+                                Você ainda precisa tocar em Enviar para a equipe recebê-la.</p>
+                            </>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </>
@@ -290,7 +456,9 @@ export function PublicSalesDrawer() {
                 onClick={restart}>Iniciar outra orientação</button>}
             </div>
             <footer className="b11-public-footer">
-              Conteúdo editorial automatizado · 0 chamadas a modelos de IA · Não substitui avaliação especializada.
+              {b12Available
+                ? "Jornada inicial sem LLM · Conversa opcional com até 3 respostas de IA · Não substitui avaliação especializada."
+                : "Conteúdo editorial automatizado · 0 chamadas a modelos de IA · Não substitui avaliação especializada."}
             </footer>
           </section>
         </div>,

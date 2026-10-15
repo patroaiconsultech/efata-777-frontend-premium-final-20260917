@@ -28,11 +28,12 @@ test("V37 immersive audio and real private access route remain unchanged", () =>
   assert.match(markup, /data-private-entry="true"/);
 });
 
-test("zero-LLM public drawer is opt-in and does not claim an actual model or human handoff", () => {
+test("editorial public drawer stays zero-LLM by default while B1.2 is separately gated", () => {
   assert.match(drawer, /import\.meta\.env\.VITE_PUBLIC_SALES_ENABLED === "true"/);
   assert.match(drawer, /Conversar com a EFATÁ 777/);
   assert.match(drawer, /ASSISTENTE EDITORIAL/);
-  assert.match(drawer, /0 chamadas a modelos de IA/);
+  assert.match(drawer, /Jornada inicial sem LLM/);
+  assert.match(drawer, /VITE_PUBLIC_SALES_B12_ENABLED === "true"/);
   assert.doesNotMatch(drawer, /fetch\(["']\/api\/v2\/auth/);
   assert.doesNotMatch(drawer, /Efata777/); // Shared code must not become a frontend secret.
 });

@@ -109,3 +109,25 @@ body.v37-immersive-open .b11-public-entry { display: none; }
 @media (prefers-reduced-motion: reduce) {
   .b11-public-layer *, .b11-public-entry { animation: none !important; transition: none !important; }
 }
+
+/* B1.2 opt-in registration and cost-capped conversation. */
+.b12-stage { margin-top: 20px; border-top: 1px solid #344755; padding-top: 10px; }
+.b12-stage > p, .b12-privacy { color: #bdc9d4; font-size: 12px; line-height: 1.55; }
+.b12-form { display: grid; gap: 12px; margin: 12px 0; }
+.b12-form label { display: grid; gap: 5px; font-weight: 600; font-size: 13px; }
+.b12-form input:not([type="checkbox"]), .b12-form textarea {
+  width: 100%; box-sizing: border-box; border-radius: 8px; border: 1px solid #647788;
+  padding: 11px; background: #101b27; color: #fff; font: inherit;
+}
+.b12-consent { display: flex !important; flex-direction: row; align-items: flex-start; gap: 9px !important; line-height: 1.5; }
+.b12-consent input { flex: none; width: 20px; height: 20px; }
+.b12-form button, .b12-whatsapp {
+  display: inline-flex; align-items: center; justify-content: center; min-height: 44px;
+  padding: 11px 13px; border-radius: 10px; border: 1px solid #37c5ff;
+  background: #174358; color: #fff; font: 600 14px/1.3 Inter, sans-serif;
+  text-decoration: none; cursor: pointer; text-align: center;
+}
+.b12-form button:disabled { opacity: .6; cursor: not-allowed; }
+.b12-turn { margin: 10px 0; padding: 10px; background: #101b27; border-radius: 9px; overflow-wrap: anywhere; }
+.b12-turn p { white-space: pre-wrap; margin: 6px 0; }
+.b12-whatsapp { margin-top: 12px; width: 100%; box-sizing: border-box; border-color: #25d366; background: #14533b; }
