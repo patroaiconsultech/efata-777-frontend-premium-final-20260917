@@ -7,6 +7,8 @@ import {
   AdminVoiceAssignment,
   AdminVoiceCatalogEntry,
   AgentStudioVersion,
+  AdminLLMConfiguration,
+  getAdminLLMConfiguration,
   AdminUsageCosts,
   getAdminUsageCosts,
   getAdminAgentStudioVersions,
@@ -74,6 +76,8 @@ export default function AdminPanel() {
   const voicePreviewAudioRef = useRef<HTMLAudioElement | null>(null);
   const voicePreviewUrlRef = useRef("");
   const [agentStudioVersions, setAgentStudioVersions] = useState<AgentStudioVersion[]>([]);
+  const [llmConfiguration, setLLMConfiguration] = useState<AdminLLMConfiguration | null>(null);
+  const [llmConfigStatus, setLLMConfigStatus] = useState<"loading" | "ready" | "unavailable">("loading");
   const [usageCosts, setUsageCosts] = useState<AdminUsageCosts | null>(null);
   const [agentStudioBusy, setAgentStudioBusy] = useState(false);
   const [agentStudioActionId, setAgentStudioActionId] = useState<string | null>(null);
@@ -115,6 +119,19 @@ export default function AdminPanel() {
           setError("Acesso administrativo não autorizado.");
           return;
         }
+        // Non-blocking: a backend without the read-only endpoint must not
+        // break existing admin functions during staggered deployments.
+        void getAdminLLMConfiguration()
+          .then((result) => {
+            if (!active) return;
+            setLLMConfiguration(result);
+            setLLMConfigStatus("ready");
+          })
+          .catch(() => {
+            if (!active) return;
+            setLLMConfiguration(null);
+            setLLMConfigStatus("unavailable");
+          });
         const [
           overview,
           catalog,
@@ -746,6 +763,49 @@ export default function AdminPanel() {
             <article><span>Mensagens</span><strong>{data.messages}</strong></article>
             <article><span>Agentes no catálogo</span><strong>{agents.length}</strong></article>
             <article><span>Teams</span><strong>{teams.length}</strong></article>
+          </section>
+
+          <section className="admin-section" aria-labelledby="llm-config-title">
+            <div className="admin-section__heading">
+              <div>
+                <span>LLM · CONFIGURAÇÃO DO BACKEND</span>
+                <h2 id="llm-config-title">Modelo padrão — somente leitura</h2>
+              </div>
+              <small>Modelo por agente permanece sujeito ao gate de ativação do Agent Studio.</small>
+            </div>
+            {llmConfigStatus === "ready" && llmConfiguration ? (
+              <>
+                <div className="admin-grid">
+                  <article>
+                    <span>Provedor principal</span>
+                    <strong>{llmConfiguration.primary_provider}</strong>
+                  </article>
+                  <article>
+                    <span>Modelo configurado</span>
+                    <strong className="admin-value">
+                      {llmConfiguration.configured_model || "Não configurado"}
+                    </strong>
+                  </article>
+                  <article>
+                    <span>Origem</span>
+                    <strong>Configuração do processo</strong>
+                  </article>
+                </div>
+                <div className="admin-governance-note">
+                  <p>
+                    Valor resolvido pelo backend (ENV ou padrão do código). Não é
+                    comprovação do modelo utilizado em uma execução específica.
+                    Trocas pelo painel ainda não estão habilitadas.
+                  </p>
+                </div>
+              </>
+            ) : (
+              <p role="status">
+                {llmConfigStatus === "loading"
+                  ? "Consultando configuração LLM do backend…"
+                  : "Configuração LLM indisponível. Nenhum modelo foi confirmado."}
+              </p>
+            )}
           </section>
 
           <section className="admin-section" aria-labelledby="access-plane-title">

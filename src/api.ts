@@ -526,6 +526,20 @@ export type AgentStudioCreate = {
   monthly_budget_usd?: number | null;
 };
 
+/** Process-level LLM selection; not proof of a model used by an execution. */
+export type AdminLLMConfiguration = {
+  primary_provider: "openai" | "anthropic" | "google";
+  configured_model: string | null;
+  configuration_scope: "process";
+  configuration_source: "resolved_settings";
+  execution_model_verified: false;
+  admin_editable: false;
+};
+
+export function getAdminLLMConfiguration(): Promise<AdminLLMConfiguration> {
+  return apiJson<AdminLLMConfiguration>("/api/v2/admin/agent-studio/llm-configuration");
+}
+
 export function getAdminAgentStudioVersions(): Promise<AgentStudioVersion[]> {
   return apiJson<AgentStudioVersion[]>("/api/v2/admin/agent-studio");
 }
