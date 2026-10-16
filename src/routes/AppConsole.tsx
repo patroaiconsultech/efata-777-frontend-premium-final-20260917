@@ -69,6 +69,30 @@ type RealtimeState =
   | "unavailable"
   | "error";
 const VOICE_MAX_RECORDING_SECONDS = 90;
+const REALTIME_RTP_SAMPLE_INTERVAL_MS = 2500;
+
+/**
+ * Only inspect non-sensitive counters. An increasing outbound RTP counter
+ * proves local packet emission, NOT delivery or transcription by the provider.
+ */
+function summarizeOutboundAudioRtp(stats: RTCStatsReport): {
+  reports: number;
+  packets: number;
+  bytes: number;
+} {
+  let reports = 0;
+  let packets = 0;
+  let bytes = 0;
+  stats.forEach((item) => {
+    if (item.type !== "outbound-rtp") return;
+    const outbound = item as RTCOutboundRtpStreamStats & { mediaType?: string };
+    if (outbound.kind !== "audio" && outbound.mediaType !== "audio") return;
+    reports += 1;
+    packets += Number(outbound.packetsSent || 0);
+    bytes += Number(outbound.bytesSent || 0);
+  });
+  return { reports, packets, bytes };
+}
 const ATTACHMENT_ACCEPT =
   ".pdf,.txt,.csv,.md,.markdown,.json,.docx,.xlsx,.pptx";
 
@@ -284,6 +308,7 @@ export default function AppConsole() {
   const [showRealtimeInfo, setShowRealtimeInfo] = useState(false);
   const [realtimeState, setRealtimeState] = useState<RealtimeState>("idle");
   const [realtimePartialTranscript, setRealtimePartialTranscript] = useState("");
+  const [realtimeTransportDiagnostic, setRealtimeTransportDiagnostic] = useState("");
   const [teamSelectionMode, setTeamSelectionMode] =
     useState<"explicit" | "all_eligible">("explicit");
   const [documentProvenanceLabel, setDocumentProvenanceLabel] = useState("");
@@ -314,6 +339,8 @@ export default function AppConsole() {
   const realtimeStreamRef = useRef<MediaStream | null>(null);
   const realtimeChannelRef = useRef<RTCDataChannel | null>(null);
   const realtimeConnectionWatchdogRef = useRef<number | null>(null);
+  const realtimeStatsTimerRef = useRef<number | null>(null);
+  const realtimePreviousPacketsRef = useRef<number | null>(null);
   const realtimeSessionIdRef = useRef("");
   const realtimeSessionThreadRef = useRef("");
   const realtimeSeenFinalIdsRef = useRef<Set<string>>(new Set());
@@ -610,6 +637,10 @@ export default function AppConsole() {
       voiceStreamRef.current?.getTracks().forEach((track) => track.stop());
       voiceStreamRef.current = null;
       voiceChunksRef.current = [];
+      if (realtimeStatsTimerRef.current !== null) {
+        window.clearInterval(realtimeStatsTimerRef.current);
+        realtimeStatsTimerRef.current = null;
+      }
       realtimeChannelRef.current?.close();
       realtimeChannelRef.current = null;
       realtimePeerRef.current?.close();
@@ -1043,8 +1074,77 @@ export default function AppConsole() {
     await playCanonicalMessageVoice(messageId);
   }
 
+  /**
+   * Diagnostic-only monitor. Does not change the provider session, ICE
+   * negotiation, audio capture, VAD, canonical agent or turn submission.
+   * No SDP, IPs, device IDs, audio or transcripts are ever logged.
+   */
+  function startRealtimeTransportDiagnostics(
+    peer: RTCPeerConnection,
+    channel: RTCDataChannel,
+    lifecycleId: number,
+    sessionThreadId: string,
+  ) {
+    if (realtimeStatsTimerRef.current !== null) {
+      window.clearInterval(realtimeStatsTimerRef.current);
+    }
+    realtimePreviousPacketsRef.current = null;
+    let pending = false;
+    const isActive = () =>
+      lifecycleId === realtimeLifecycleRef.current &&
+      realtimePeerRef.current === peer &&
+      realtimeChannelRef.current === channel &&
+      activeThreadRef.current === sessionThreadId;
+
+    async function sample() {
+      if (!isActive() || pending) return;
+      pending = true;
+      try {
+        const report = summarizeOutboundAudioRtp(await peer.getStats());
+        if (!isActive()) return;
+        const liveMic = realtimeStreamRef.current
+          ?.getAudioTracks()
+          .some((track) => track.readyState === "live" && track.enabled);
+        const previousPackets = realtimePreviousPacketsRef.current;
+        realtimePreviousPacketsRef.current = report.reports ? report.packets : null;
+        const rtpDescription = !report.reports
+          ? "RTP áudio: relatório ausente"
+          : previousPackets === null
+            ? `RTP áudio: primeira amostra (${report.packets} pacotes)`
+            : report.packets > previousPackets
+              ? `RTP áudio: +${report.packets - previousPackets} pacotes/${REALTIME_RTP_SAMPLE_INTERVAL_MS / 1000}s`
+              : "RTP áudio: sem avanço de pacotes";
+        setRealtimeTransportDiagnostic(
+          `Mic: ${liveMic ? "ativo" : "inativo"} · ` +
+          `Canal: ${channel.readyState} · ICE: ${peer.iceConnectionState} · ` +
+          `Peer: ${peer.connectionState} · ${rtpDescription}`,
+        );
+      } catch {
+        if (isActive()) {
+          setRealtimeTransportDiagnostic(
+            `Canal: ${channel.readyState} · ICE: ${peer.iceConnectionState} · ` +
+            "estatísticas RTP indisponíveis",
+          );
+        }
+      } finally {
+        pending = false;
+      }
+    }
+    setRealtimeTransportDiagnostic("Diagnóstico RTP: aguardando primeira amostra…");
+    void sample();
+    realtimeStatsTimerRef.current = window.setInterval(() => {
+      void sample();
+    }, REALTIME_RTP_SAMPLE_INTERVAL_MS);
+  }
+
   function stopRealtimeSession() {
     realtimeLifecycleRef.current += 1;
+    if (realtimeStatsTimerRef.current !== null) {
+      window.clearInterval(realtimeStatsTimerRef.current);
+      realtimeStatsTimerRef.current = null;
+    }
+    realtimePreviousPacketsRef.current = null;
+    setRealtimeTransportDiagnostic("");
     if (realtimeConnectionWatchdogRef.current !== null) {
       window.clearTimeout(realtimeConnectionWatchdogRef.current);
       realtimeConnectionWatchdogRef.current = null;
@@ -1405,6 +1505,7 @@ export default function AppConsole() {
       realtimeSessionThreadRef.current = sessionThreadId;
       await peer.setRemoteDescription({ type: "answer", sdp: call.sdp });
       if (!isCurrentAttempt()) return;
+      startRealtimeTransportDiagnostics(peer, channel, lifecycleId, sessionThreadId);
       // SDP accepted is not proof of a working data channel. "Ouvindo" only
       // becomes true after channel.onopen, not after an HTTP 200 response.
       if (channel.readyState === "open") {
@@ -2397,6 +2498,11 @@ export default function AppConsole() {
               {executionTargetName} · {executionTargetRole}
             </span>
           </div>
+          {realtimeActive && realtimeTransportDiagnostic ? (
+            <p className="realtime-transport-diagnostic" aria-live="off">
+              Diagnóstico local: {realtimeTransportDiagnostic}
+            </p>
+          ) : null}
           <div className="composer__row">
             <div className="composer__editor">
           <LargePasteDecision capabilities={documentIntake.capabilities} view={documentIntake.view} onConfirm={(title) => void documentIntake.confirm(title)} onCancel={documentIntake.cancel} />
