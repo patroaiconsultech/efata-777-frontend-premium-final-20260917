@@ -11,7 +11,9 @@ test("API normalizes raw agent, thread and message payloads before the console c
   assert.match(api, /function normalizeAgent\(value: unknown, index: number\)/);
   assert.match(api, /function normalizeThread\(value: unknown, index: number\)/);
   assert.match(api, /function normalizeMessage\(value: unknown, index: number\)/);
-  assert.match(api, /apiJson<unknown>\("\/api\/v2\/agents"\)/);
+  assert.match(api, /export function listAgents\(threadId\?: string\)/);
+  assert.match(api, /threadId\s*\?\s*`\?thread_id=\$\{encodeURIComponent\(threadId\)\}`/);
+  assert.match(api, /apiJson<unknown>\(`\/api\/v2\/agents\$\{scope\}`\)/);
   assert.match(api, /apiJson<unknown>\(`\/api\/v2\/threads\?limit=/);
   assert.match(api, /apiJson<unknown>\(/);
 });

@@ -57,7 +57,8 @@ test("attachment UX is explicit and mirrors backend-supported document types", (
   }
   assert.match(console_, /Anexar documento/);
   assert.match(console_, /Enviando…/);
-  assert.match(console_, /disabled=\{!accountReady \|\| !threadId \|\| sending \|\| uploading\}/);
+  assert.match(console_, /disabled=\{!accountReady \|\| !threadId \|\| !threadPermissions\?\.can_upload_files \|\| sending \|\| uploading\}/);
+  assert.match(console_, /if \(!threadPermissions\?\.can_upload_files\)/);
   assert.match(styles, /\.attachment-button/);
 });
 

@@ -2633,3 +2633,17 @@ button.header-cta {
 .people-panel__person summary span { color: var(--muted); font-size: .85rem; }
 .people-panel__fields { display: grid; gap: 12px; padding-top: 16px; }
 .people-panel__person-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+
+/* RTP local: counters only; never includes audio, transcript, IP or SDP. */
+.realtime-transport-diagnostic {
+  margin: 0.4rem 0 0.65rem;
+  padding: 0.55rem 0.7rem;
+  border-left: 2px solid #37c5ff;
+  border-radius: 6px;
+  background: rgba(55, 197, 255, 0.07);
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}

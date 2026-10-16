@@ -8,9 +8,11 @@ const adminCss = readFileSync(new URL("../src/admin.css", import.meta.url), "utf
 
 test("PWA invite preserves the existing conversation invitation flow", () => {
   assert.match(app, /className="console-header__invite"/);
-  assert.match(app, /onClick=\{\(\) => setShowInvite\(true\)\}/);
+  assert.match(app, /onClick=\{\(\) => \{ setShowInvite\(true\); void refreshParticipants\(\); \}\}/);
   assert.match(app, /disabled=\{!accountReady \|\| !threadId\}/);
-  assert.match(app, /aria-label="Convidar usuários para esta conversa"/);
+  assert.match(app, /aria-label="Gerenciar participantes e permissões desta conversa"/);
+  assert.match(app, /thread_role/);
+  assert.match(app, /className="modal-card people-panel"/);
   assert.match(app, /\{showInvite \? \(/);
   assert.match(app, /createInvite\(/);
 });

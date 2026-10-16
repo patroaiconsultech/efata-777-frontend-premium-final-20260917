@@ -6,8 +6,10 @@ const api = readFileSync(new URL("../src/api.ts", import.meta.url), "utf8");
 const consoleSource = readFileSync(new URL("../src/routes/AppConsole.tsx", import.meta.url), "utf8");
 
 test("agent catalog is backend-driven", () => {
-  assert.match(api, /apiJson<unknown>\("\/api\/v2\/agents"\)/);
-  assert.match(consoleSource, /await listAgents\(\)/);
+  assert.match(api, /export function listAgents\(threadId\?: string\)/);
+  assert.match(api, /threadId\s*\?\s*`\?thread_id=\$\{encodeURIComponent\(threadId\)\}`/);
+  assert.match(api, /apiJson<unknown>\(`\/api\/v2\/agents\$\{scope\}`\)/);
+  assert.match(consoleSource, /await listAgents\(threadId \|\| undefined\)/);
   assert.doesNotMatch(consoleSource, /\["Orkio",\s*"Auditor"/);
 });
 
@@ -21,7 +23,7 @@ test("individual execution requires an explicit backend-catalog agent target", (
 });
 
 test("backend agent catalog is selectable explicitly while Team remains admin-governed", () => {
-  assert.match(consoleSource, /type ExecutionMode = "individual" \| "team"/);
+  assert.match(consoleSource, /type ExecutionMode = "individual" \| "team" \| "human"/);
   assert.match(consoleSource, /streamTeamMessage\(/);
   assert.match(consoleSource, /\{showAgents \? \(/);
   assert.match(consoleSource, /\{me\?\.admin_access \? \(/);
@@ -30,6 +32,9 @@ test("backend agent catalog is selectable explicitly while Team remains admin-go
 });
 
 test("participant invite remains a separate capability", () => {
-  assert.match(consoleSource, /\+ Convidar/);
-  assert.match(consoleSource, /setShowInvite\(true\)/);
+  assert.match(consoleSource, /className="console-header__invite"/);
+  assert.match(consoleSource, /Pessoas e vínculos/);
+  assert.match(consoleSource, /Gerenciar participantes e permissões desta conversa/);
+  assert.match(consoleSource, /setShowInvite\(true\); void refreshParticipants\(\);/);
+  assert.match(consoleSource, /thread_role/);
 });

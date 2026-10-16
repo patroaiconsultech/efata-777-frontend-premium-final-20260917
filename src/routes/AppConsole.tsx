@@ -7,7 +7,15 @@ import {
   ArtifactMetadata,
   ChatMessage,
   Thread,
+  ThreadGrant,
+  ThreadParticipant,
+  ThreadPermissions,
   createInvite,
+  getThreadPermissions,
+  listThreadParticipants,
+  updateThreadParticipantPermissions,
+  updateThreadParticipantAccess,
+  revokeThreadParticipant,
   createRealtimeCall,
   createThread,
   commitRealtimeTurn,
@@ -26,6 +34,7 @@ import {
   listThreads,
   messageVoice,
   parseArtifactMetadata,
+  postHumanMessage,
   RealtimeCapabilities,
   streamMessage,
   streamRealtimeTurn,
@@ -54,7 +63,7 @@ import {
 const DEFAULT_COCREATOR_LABEL = "Co-Criador";
 
 type VoiceState = "idle" | "recording" | "transcribing" | "review";
-type ExecutionMode = "individual" | "team";
+type ExecutionMode = "individual" | "team" | "human";
 type RealtimeState =
   | "idle"
   | "requesting_microphone"
@@ -267,6 +276,23 @@ export default function AppConsole() {
   const [inviteDeliveryStatus, setInviteDeliveryStatus] = useState<"link_only" | "">("");
   const [inviteError, setInviteError] = useState("");
   const [inviteBusy, setInviteBusy] = useState(false);
+  const [inviteHistory, setInviteHistory] = useState<ThreadGrant["history_access"]>("from_join");
+  const [inviteAgentId, setInviteAgentId] = useState("orkio");
+  const [inviteCanUpload, setInviteCanUpload] = useState(false);
+  const [inviteCanRead, setInviteCanRead] = useState(true);
+  const [inviteCanWrite, setInviteCanWrite] = useState(true);
+  const [inviteCanViewDocuments, setInviteCanViewDocuments] = useState(false);
+  const [inviteCanDownloadArtifacts, setInviteCanDownloadArtifacts] = useState(false);
+  const [inviteCanGenerateArtifacts, setInviteCanGenerateArtifacts] = useState(false);
+  const [inviteAccessHours, setInviteAccessHours] = useState("72");
+  const [inviteUnlimitedAccess, setInviteUnlimitedAccess] = useState(false);
+  const [participantAccessHours, setParticipantAccessHours] = useState<Record<string, string>>({});
+  const [participants, setParticipants] = useState<ThreadParticipant[]>([]);
+  const [participantDrafts, setParticipantDrafts] = useState<Record<string, ThreadGrant>>({});
+  const [participantsBusy, setParticipantsBusy] = useState(false);
+  const [participantAction, setParticipantAction] = useState("");
+  const [participantError, setParticipantError] = useState("");
+  const [threadPermissions, setThreadPermissions] = useState<ThreadPermissions | null>(null);
 
   const [threads, setThreads] = useState<Thread[]>([]);
   const [threadId, setThreadId] = useState<string>(
@@ -470,8 +496,11 @@ export default function AppConsole() {
     setAgentsBusy(true);
     setAgentsError("");
     try {
-      const catalog = await listAgents();
+      const catalog = await listAgents(threadId || undefined);
       setAgents(catalog);
+      setInviteAgentId((current) =>
+        catalog.some((agent) => agent.slug === current) ? current : catalog[0]?.slug ?? "orkio",
+      );
       setSelectedAgent((current) => {
         if (!current) return null;
         return catalog.find((agent) => agent.slug === current.slug) ?? null;
@@ -483,7 +512,7 @@ export default function AppConsole() {
     } finally {
       setAgentsBusy(false);
     }
-  }, [authenticated, configured]);
+  }, [authenticated, configured, threadId]);
 
   const refreshTeams = useCallback(async () => {
     if (!configured || !authenticated) return;
@@ -610,8 +639,51 @@ export default function AppConsole() {
   }, [refreshThreads]);
 
   useEffect(() => {
+    setShowInvite(false);
+    setParticipants([]);
+    setParticipantDrafts({});
+    setExecutionMode("individual");
+  }, [threadId]);
+
+  useEffect(() => {
+    let active = true;
+    setThreadPermissions(null);
+    if (!threadId || !accountReady) return () => { active = false; };
+    void getThreadPermissions(threadId)
+      .then((permissions) => { if (active) setThreadPermissions(permissions); })
+      .catch((err) => { if (active) setError(describe(err)); });
+    return () => { active = false; };
+  }, [threadId, accountReady]);
+
+  useEffect(() => {
     void refreshMessages();
   }, [refreshMessages]);
+
+  // Lightweight refresh for human conversation; no AI, no persistent socket.
+  // Ignore late responses after switching threads or leaving human mode.
+  useEffect(() => {
+    if (!accountReady || !threadId || executionMode !== "human" ||
+        !threadPermissions?.can_read_messages) return;
+    let disposed = false;
+    let pending = false;
+    const currentThreadId = threadId;
+    const tick = async () => {
+      if (pending || sending || document.hidden) return;
+      pending = true;
+      try {
+        const items = await listMessages(currentThreadId);
+        if (!disposed && activeThreadRef.current === currentThreadId) {
+          setMessages(items);
+        }
+      } catch (err) {
+        if (!disposed && !isAbortLike(err)) setError(describe(err));
+      } finally {
+        pending = false;
+      }
+    };
+    const intervalId = window.setInterval(() => void tick(), 5000);
+    return () => { disposed = true; window.clearInterval(intervalId); };
+  }, [accountReady, executionMode, sending, threadId, threadPermissions?.can_read_messages]);
 
   useEffect(() => {
     return () => {
@@ -1376,10 +1448,8 @@ export default function AppConsole() {
       setError("Crie ou selecione uma conversa antes de iniciar o Realtime.");
       return;
     }
-    if (executionMode === "team") {
-      setError(
-        "Realtime Team ainda não está liberado; use o modo Individual para iniciar uma sessão de voz.",
-      );
+    if (executionMode !== "individual") {
+      setError("Realtime de agente requer modo Individual. No modo Pessoas não há execução de IA.");
       return;
     }
     if (!selectedTechnicalTarget) {
@@ -1713,7 +1783,10 @@ export default function AppConsole() {
         },
       };
 
-      if (executionMode === "team" && teamDefinition) {
+      if (executionMode === "human") {
+        await postHumanMessage(threadId, content);
+        await refreshMessages();
+      } else if (executionMode === "team" && teamDefinition) {
         setTeamRunStatus("Team iniciando…");
         await streamTeamMessage(
           threadId,
@@ -1795,6 +1868,10 @@ export default function AppConsole() {
     event.target.value = "";
     if (!file) return;
     if (!requireProvisioned()) return;
+    if (!threadPermissions?.can_upload_files) {
+      setError("Você não tem permissão para anexar documentos nesta conversa.");
+      return;
+    }
     if (!threadId) {
       setError("Crie ou selecione uma conversa antes de anexar.");
       return;
@@ -1908,6 +1985,93 @@ export default function AppConsole() {
     }
   }
 
+  async function refreshParticipants() {
+    if (!threadId) return;
+    setParticipantsBusy(true);
+    setParticipantError("");
+    try {
+      const rows = await listThreadParticipants(threadId);
+      setParticipants(rows);
+      setParticipantAccessHours((current) => Object.fromEntries(
+        rows.map((item) => [item.user_id, current[item.user_id] ?? "72"]),
+      ));
+      setParticipantDrafts(Object.fromEntries(
+        rows.map((item) => [item.user_id, {
+          history_access: item.history_access ?? "from_join",
+          allowed_agent_ids: item.allowed_agent_ids?.length ? item.allowed_agent_ids : ["orkio"],
+          can_upload_files: Boolean(item.can_upload_files),
+          can_read_messages: item.can_read_messages !== false,
+          can_write_messages: item.can_write_messages !== false,
+          can_view_attachments: Boolean(item.can_view_attachments),
+          can_download_artifacts: Boolean(item.can_download_artifacts),
+          can_generate_artifacts: Boolean(item.can_generate_artifacts),
+        }]),
+      ));
+    } catch (err) {
+      setParticipantError(describe(err));
+    } finally {
+      setParticipantsBusy(false);
+    }
+  }
+
+  async function saveParticipant(userId: string) {
+    const draft = participantDrafts[userId];
+    if (!threadId || !draft || participantAction) return;
+    setParticipantAction(userId);
+    setParticipantError("");
+    try {
+      await updateThreadParticipantPermissions(threadId, userId, draft);
+      await refreshParticipants();
+      setNotice("Permissões do colaborador atualizadas.");
+    } catch (err) {
+      setParticipantError(describe(err));
+    } finally {
+      setParticipantAction("");
+    }
+  }
+
+  async function renewParticipantAccess(userId: string) {
+    const rawHours = participantAccessHours[userId] ?? "72";
+    const hours = rawHours === "" ? null : Number(rawHours);
+    if (!threadId || participantAction ||
+        (hours !== null && (!Number.isInteger(hours) || hours < 1 || hours > 8760))) {
+      setParticipantError("Escolha um prazo de 1 a 8760 horas ou sem prazo.");
+      return;
+    }
+    if (!window.confirm(
+      hours === null
+        ? "Permitir acesso sem data de vencimento para esta pessoa?"
+        : `Alterar a validade do acesso para ${hours} hora(s) a partir de agora?`,
+    )) return;
+    setParticipantAction(userId);
+    setParticipantError("");
+    try {
+      await updateThreadParticipantAccess(threadId, userId, hours);
+      await refreshParticipants();
+      setNotice("Prazo de acesso do participante atualizado.");
+    } catch (err) {
+      setParticipantError(describe(err));
+    } finally {
+      setParticipantAction("");
+    }
+  }
+
+  async function removeParticipant(userId: string) {
+    if (!threadId || participantAction) return;
+    if (!window.confirm("Revogar o acesso desta pessoa à conversa?")) return;
+    setParticipantAction(userId);
+    setParticipantError("");
+    try {
+      await revokeThreadParticipant(threadId, userId);
+      await refreshParticipants();
+      setNotice("Vínculo revogado.");
+    } catch (err) {
+      setParticipantError(describe(err));
+    } finally {
+      setParticipantAction("");
+    }
+  }
+
   async function invite() {
     if (!requireProvisioned()) {
       setInviteError(
@@ -1929,10 +2093,19 @@ export default function AppConsole() {
       const out = await createInvite(threadId, {
         email,
         role: "participant",
-        history_access: "from_join",
+        history_access: inviteHistory,
+        allowed_agent_ids: [inviteAgentId],
+        can_upload_files: inviteCanUpload,
+        can_read_messages: inviteCanRead,
+        can_write_messages: inviteCanWrite,
+        can_view_attachments: inviteCanViewDocuments,
+        can_download_artifacts: inviteCanDownloadArtifacts,
+        can_generate_artifacts: inviteCanGenerateArtifacts,
+        access_duration_hours: inviteUnlimitedAccess ? null : Number(inviteAccessHours),
       });
       setInviteUrl(out.invitation_url);
       setInviteDeliveryStatus("link_only");
+      setEmail("");
     } catch (err) {
       setInviteError(describe(err));
     } finally {
@@ -2006,9 +2179,9 @@ export default function AppConsole() {
   const teamMax = activeTeam?.participant_policy.max_contributors ?? 0;
   const teamEligibleCount = activeTeam?.participant_policy.eligible_count ?? 0;
   const executionTargetName =
-    selectedAgent?.display_name || "Selecionar agente";
+    executionMode === "human" ? "Pessoas · sem IA" : selectedAgent?.display_name || "Selecionar agente";
   const executionTargetRole =
-    selectedAgent?.role_label || "Seleção explícita necessária";
+    executionMode === "human" ? "Conversa entre participantes" : selectedAgent?.role_label || "Seleção explícita necessária";
   const realtimeReason =
     realtimeCapabilities?.orchestration_bridge?.reason_code ||
     realtimeCapabilities?.realtime_session?.reason_code ||
@@ -2308,17 +2481,21 @@ export default function AppConsole() {
                 </Link>
               )
             ) : null}
-            <button
-              type="button"
-              className="console-header__invite"
-              onClick={() => setShowInvite(true)}
-              disabled={!accountReady || !threadId}
-              aria-label="Convidar usuários para esta conversa"
-              title="Convidar usuários para esta conversa"
-            >
-              <span className="console-header__invite-icon" aria-hidden="true">+</span>
-              <span className="console-header__invite-label">+ Convidar</span>
-            </button>
+            {["owner", "moderator"].includes(
+              threads.find((item) => item.id === threadId)?.thread_role || "",
+            ) ? (
+              <button
+                type="button"
+                className="console-header__invite"
+                onClick={() => { setShowInvite(true); void refreshParticipants(); }}
+                disabled={!accountReady || !threadId}
+                aria-label="Gerenciar participantes e permissões desta conversa"
+                title="Gerenciar participantes e permissões desta conversa"
+              >
+                <span className="console-header__invite-icon" aria-hidden="true">+</span>
+                <span className="console-header__invite-label">Pessoas e vínculos</span>
+              </button>
+            ) : null}
           </div>
         </header>
 
@@ -2475,7 +2652,7 @@ export default function AppConsole() {
           <div className="composer__status" aria-live="polite">
             <span>
               {sending
-                ? teamRunStatus || `Gerando resposta com ${executionTargetName}…`
+                ? executionMode === "human" ? "Enviando mensagem aos participantes…" : teamRunStatus || `Gerando resposta com ${executionTargetName}…`
                 : voiceState === "recording"
                   ? `Gravando ${formatVoiceElapsed(voiceElapsed)} · máx. ${formatVoiceElapsed(VOICE_MAX_RECORDING_SECONDS)}`
                   : voiceState === "transcribing"
@@ -2529,12 +2706,12 @@ export default function AppConsole() {
             <div className="composer__actions" role="group" aria-label="Ações de mensagem">
           <label
             className={
-              !accountReady || !threadId || sending || uploading
+              !accountReady || !threadId || !threadPermissions?.can_upload_files || sending || uploading
                 ? "attachment-button attachment-button--disabled"
                 : "attachment-button"
             }
             aria-label="Anexar documento"
-            aria-disabled={!accountReady || !threadId || sending || uploading}
+            aria-disabled={!accountReady || !threadId || !threadPermissions?.can_upload_files || sending || uploading}
             title="Anexar PDF, DOCX, XLSX, PPTX, TXT, CSV ou JSON"
           >
             <span className="attachment-button__icon" aria-hidden="true">📎</span>
@@ -2547,19 +2724,44 @@ export default function AppConsole() {
               ref={fileRef}
               accept={ATTACHMENT_ACCEPT}
               onChange={handleFile}
-              disabled={!accountReady || !threadId || sending || uploading}
+              disabled={!accountReady || !threadId || !threadPermissions?.can_upload_files || sending || uploading}
             />
           </label>
+          <button
+            type="button"
+            className={executionMode === "human" ? "agent-trigger agent-mode__active" : "agent-trigger"}
+            aria-pressed={executionMode === "human"}
+            onClick={() => {
+              if (executionMode !== "human") {
+                if (realtimeActive) {
+                  setError("Encerre a sessão Realtime antes de entrar no modo Pessoas.");
+                  return;
+                }
+                setExecutionMode("human");
+                setNotice("Modo Pessoas: suas mensagens não chamam agentes.");
+              } else {
+                setExecutionMode("individual");
+                setNotice("Modo Agente ativado para a próxima mensagem.");
+              }
+            }}
+            disabled={!accountReady || sending || realtimeActive}
+            title={executionMode === "human" ? "Voltar ao modo Agente" : "Conversar apenas com pessoas, sem IA"}
+          >
+            <span aria-hidden="true">👥</span>
+            <span className="agent-trigger__label">{executionMode === "human" ? "Pessoas ✓" : "Pessoas"}</span>
+          </button>
           <button
             type="button"
             className="agent-trigger"
             onClick={() => setShowAgents(true)}
             disabled={!accountReady || agentsBusy}
-            aria-label={`Selecionar agente. Ativo: ${executionTargetName}`}
-            title="Selecionar agente disponível"
+            aria-label={executionMode === "human"
+              ? "Convocar agente para analisar a conversa autorizada"
+              : `Selecionar agente. Ativo: ${executionTargetName}`}
+            title="Escolha o agente que poderá trabalhar sobre o histórico autorizado"
           >
             <span aria-hidden="true">✦</span>
-            <span className="agent-trigger__label">{executionTargetName}</span>
+            <span className="agent-trigger__label">{executionMode === "human" ? "Convocar agente" : executionTargetName}</span>
           </button>
           <button
             type="button"
@@ -2630,7 +2832,7 @@ export default function AppConsole() {
               voiceState === "transcribing"
             }
           >
-            {sending ? "Gerando…" : "Enviar"}
+            {sending ? (executionMode === "human" ? "Enviando…" : "Gerando…") : "Enviar"}
           </button>
             </div>
           </div>
@@ -2764,6 +2966,15 @@ export default function AppConsole() {
             </div>
 
             <div className="agent-mode" aria-label="Modo de execução">
+              <button
+                type="button"
+                className={executionMode === "human" ? "agent-mode__active" : ""}
+                aria-pressed={executionMode === "human"}
+                disabled={sending || realtimeActive}
+                onClick={() => { setExecutionMode("human"); setShowAgents(false); }}
+              >
+                Pessoas · sem IA
+              </button>
               <button
                 type="button"
                 className={executionMode === "individual" ? "agent-mode__active" : ""}
@@ -2902,8 +3113,9 @@ export default function AppConsole() {
                           return;
                         }
                         setSelectedAgent(agent);
+                        setExecutionMode("individual");
                         setShowAgents(false);
-                        setNotice(`Agente selecionado: ${agentDisplayName}`);
+                        setNotice(`Agente ${agentDisplayName} convocado. Escreva o que deseja que ele analise no histórico autorizado.`);
                       }}
                     >
                       <span className="agent-card__avatar" aria-hidden="true">
@@ -3043,52 +3255,249 @@ export default function AppConsole() {
       {showInvite ? (
         <div className="modal" role="presentation">
           <section
-            className="modal-card"
+            className="modal-card people-panel"
             role="dialog"
             aria-modal="true"
-            aria-labelledby="invite-title"
+            aria-labelledby="people-panel-title"
           >
-            <h2 id="invite-title">Convidar participante</h2>
-            <label>
-              E-mail
-              <input
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder="email@empresa.com"
-              />
-            </label>
-            <p>
-              Função: Participante · Histórico: a partir da entrada · Validade: 72
-              horas
-            </p>
-            {inviteError ? (
-              <p className="console-alert" role="alert">
-                {inviteError}
-              </p>
-            ) : null}
-            {inviteUrl ? (
-              <>
-                <output>{inviteUrl}</output>
-                {inviteDeliveryStatus === "link_only" ? (
-                  <p role="status">
-                    Link de convite da conversa gerado. Este fluxo não envia e-mail automaticamente.
-                  </p>
-                ) : null}
-              </>
-            ) : null}
-            <div className="modal-card__actions">
-              <button type="button" onClick={() => setShowInvite(false)}>
-                Cancelar
+            <div className="people-panel__heading">
+              <div>
+                <h2 id="people-panel-title">Pessoas e vínculos</h2>
+                <p>Permissões exclusivas desta conversa, administradas pelo servidor.</p>
+              </div>
+              <button type="button" onClick={() => setShowInvite(false)} aria-label="Fechar painel">
+                ×
               </button>
+            </div>
+            <div className="people-panel__section">
+              <h3>Novo convite</h3>
+              <label>
+                E-mail do colaborador
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder="email@empresa.com"
+                />
+              </label>
+              <label>
+                Histórico da conversa
+                <select
+                  value={inviteHistory}
+                  onChange={(event) => setInviteHistory(event.target.value as ThreadGrant["history_access"])}
+                >
+                  <option value="from_join">Somente a partir da entrada</option>
+                  <option value="full_thread">Conversa inteira, incluindo mensagens anteriores</option>
+                </select>
+              </label>
+              <label>
+                Duração do acesso após aceitar (horas)
+                <input type="number" min={1} max={8760} step={1}
+                  value={inviteAccessHours} disabled={inviteUnlimitedAccess}
+                  onChange={(event) => setInviteAccessHours(event.target.value)} />
+                <small>O link do convite continua tendo prazo próprio de 72 horas, configurado no servidor.</small>
+              </label>
+              <label className="people-panel__toggle">
+                <input type="checkbox" checked={inviteUnlimitedAccess}
+                  onChange={(event) => setInviteUnlimitedAccess(event.target.checked)} />
+                Acesso sem vencimento (até revogação manual)
+              </label>
+              <label className="people-panel__toggle">
+                <input type="checkbox" checked={inviteCanRead}
+                  onChange={(event) => setInviteCanRead(event.target.checked)} />
+                Pode ler mensagens do histórico autorizado
+              </label>
+              <label className="people-panel__toggle">
+                <input type="checkbox" checked={inviteCanWrite}
+                  onChange={(event) => setInviteCanWrite(event.target.checked)} />
+                Pode escrever mensagens e interagir com agentes
+              </label>
+              <label>
+                Agente disponível ao colaborador
+                <select
+                  value={inviteAgentId}
+                  onChange={(event) => setInviteAgentId(event.target.value)}
+                >
+                  {agents.map((agent) => (
+                    <option key={agent.slug} value={agent.slug}>{agent.display_name}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="people-panel__toggle">
+                <input
+                  type="checkbox"
+                  checked={inviteCanUpload}
+                  onChange={(event) => setInviteCanUpload(event.target.checked)}
+                />
+                Permitir anexar documentos (desativado por padrão)
+              </label>
+              <label className="people-panel__toggle">
+                <input type="checkbox" checked={inviteCanViewDocuments}
+                  onChange={(event) => setInviteCanViewDocuments(event.target.checked)} />
+                Pode consultar documentos autorizados
+              </label>
+              <label className="people-panel__toggle">
+                <input type="checkbox" checked={inviteCanDownloadArtifacts}
+                  onChange={(event) => setInviteCanDownloadArtifacts(event.target.checked)} />
+                Pode consultar ou baixar artefatos gerados
+              </label>
+              <label className="people-panel__toggle">
+                <input type="checkbox" checked={inviteCanGenerateArtifacts}
+                  onChange={(event) => setInviteCanGenerateArtifacts(event.target.checked)} />
+                Pode gerar novos artefatos
+              </label>
+              <p className="people-panel__hint">
+                O acesso é exclusivo desta conversa. O histórico completo exige concessão explícita.
+                Revogar a leitura impede novos acessos, mas não apaga cópias já vistas ou exportadas.
+              </p>
+              {inviteError ? <p className="console-alert" role="alert">{inviteError}</p> : null}
+              {inviteUrl ? (
+                <div className="people-panel__invite-link">
+                  <strong>Convite criado</strong>
+                  <output>{inviteUrl}</output>
+                  <small>
+                    {inviteDeliveryStatus === "link_only"
+                      ? "Link gerado; compartilhe com a pessoa convidada."
+                      : "Compartilhe o link diretamente com o convidado."}
+                  </small>
+                </div>
+              ) : null}
               <button
                 type="button"
                 className="primary-button"
                 onClick={invite}
-                disabled={inviteBusy || !accountReady}
+                disabled={inviteBusy || !accountReady || !email.trim() || !agents.some((agent) => agent.slug === inviteAgentId)
+                  || (!inviteUnlimitedAccess && (!Number.isInteger(Number(inviteAccessHours))
+                    || Number(inviteAccessHours) < 1 || Number(inviteAccessHours) > 8760))}
               >
-                {inviteBusy ? "Gerando." : "Gerar convite"}
+                {inviteBusy ? "Criando convite…" : "Criar convite com essas permissões"}
               </button>
+            </div>
+            <div className="people-panel__section">
+              <div className="people-panel__heading">
+                <h3>Participantes da conversa</h3>
+                <button type="button" onClick={() => void refreshParticipants()} disabled={participantsBusy}>
+                  {participantsBusy ? "Atualizando…" : "Atualizar"}
+                </button>
+              </div>
+              {participantError ? <p className="console-alert" role="alert">{participantError}</p> : null}
+              {participants.length === 0 && !participantsBusy ? (
+                <p className="people-panel__hint">Nenhum participante listado ou acesso indisponível.</p>
+              ) : null}
+              {participants.map((person) => {
+                const draft = participantDrafts[person.user_id];
+                const owner = person.role === "owner";
+                const canEdit = threads.find((item) => item.id === threadId)?.thread_role === "owner" && !owner;
+                return (
+                  <details className="people-panel__person" key={person.id}>
+                    <summary>
+                      <strong>{person.display_name || person.email || person.user_id}</strong>
+                      <span>{owner ? "Proprietário" : person.access_expired ? "Prazo encerrado" : person.role === "moderator" ? "Moderador" : "Colaborador"}</span>
+                    </summary>
+                    {draft ? (
+                      <div className="people-panel__fields">
+                        <label>
+                          Histórico
+                          <select
+                            value={draft.history_access}
+                            disabled={!canEdit || participantAction === person.user_id}
+                            onChange={(event) => setParticipantDrafts((current) => ({
+                              ...current,
+                              [person.user_id]: { ...draft, history_access: event.target.value as ThreadGrant["history_access"] },
+                            }))}
+                          >
+                            <option value="from_join">A partir da entrada</option>
+                            <option value="full_thread">Histórico completo</option>
+                          </select>
+                        </label>
+                        {([
+                          ["can_read_messages", "Ler histórico autorizado"],
+                          ["can_write_messages", "Escrever mensagens"],
+                          ["can_view_attachments", "Consultar documentos"],
+                          ["can_upload_files", "Anexar documentos"],
+                          ["can_download_artifacts", "Consultar ou baixar artefatos"],
+                          ["can_generate_artifacts", "Gerar artefatos"],
+                        ] as const).map(([field, title]) => (
+                          <label key={field} className="people-panel__toggle">
+                            <input type="checkbox" checked={draft[field]}
+                              disabled={!canEdit || participantAction === person.user_id}
+                              onChange={(event) => setParticipantDrafts((current) => ({
+                                ...current,
+                                [person.user_id]: { ...draft, [field]: event.target.checked },
+                              }))} />
+                            {title}
+                          </label>
+                        ))}
+                        <label>
+                          Agente permitido
+                          <select
+                            value={draft.allowed_agent_ids[0] || "orkio"}
+                            disabled={!canEdit || participantAction === person.user_id}
+                            onChange={(event) => setParticipantDrafts((current) => ({
+                              ...current,
+                              [person.user_id]: { ...draft, allowed_agent_ids: [event.target.value] },
+                            }))}
+                          >
+                            {agents.map((agent) => (
+                              <option key={agent.slug} value={agent.slug}>{agent.display_name}</option>
+                            ))}
+                          </select>
+                        </label>
+                        {canEdit ? (
+                          <div className="people-panel__fields">
+                            <p className="people-panel__hint">
+                              {person.access_expired
+                                ? "Acesso expirado; a pessoa não pode entrar nesta conversa."
+                                : person.access_expires_at
+                                  ? `Acesso válido até ${new Date(person.access_expires_at).toLocaleString("pt-BR")}`
+                                  : "Acesso sem prazo definido (até revogação)."}
+                            </p>
+                            <label>
+                              Renovar ou alterar prazo (horas)
+                              <input type="number" min={1} max={8760} step={1}
+                                value={participantAccessHours[person.user_id] ?? "72"}
+                                onChange={(event) => setParticipantAccessHours((current) => ({
+                                  ...current, [person.user_id]: event.target.value,
+                                }))}
+                                disabled={Boolean(participantAction)} />
+                              <small>Deixe vazio para conceder acesso sem vencimento.</small>
+                            </label>
+                            <button type="button"
+                              disabled={Boolean(participantAction)}
+                              onClick={() => void renewParticipantAccess(person.user_id)}>
+                              Aplicar novo prazo
+                            </button>
+                          </div>
+                        ) : null}
+                        {canEdit ? (
+                          <div className="people-panel__person-actions">
+                            <button
+                              type="button"
+                              className="primary-button"
+                              disabled={Boolean(participantAction)}
+                              onClick={() => void saveParticipant(person.user_id)}
+                            >
+                              Salvar permissões
+                            </button>
+                            <button
+                              type="button"
+                              disabled={Boolean(participantAction)}
+                              onClick={() => void removeParticipant(person.user_id)}
+                            >
+                              Revogar vínculo
+                            </button>
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : (
+                      <p>As permissões individuais não estão disponíveis.</p>
+                    )}
+                  </details>
+                );
+              })}
+            </div>
+            <div className="modal-card__actions">
+              <button type="button" onClick={() => setShowInvite(false)}>Fechar</button>
             </div>
           </section>
         </div>
