@@ -242,8 +242,9 @@ function normalizeAgent(value: unknown, index: number): AgentDefinition | null {
   };
 }
 
-export function listAgents(): Promise<AgentDefinition[]> {
-  return apiJson<unknown>("/api/v2/agents").then((payload) => {
+export function listAgents(threadId?: string): Promise<AgentDefinition[]> {
+  const scope = threadId ? `?thread_id=${encodeURIComponent(threadId)}` : "";
+  return apiJson<unknown>(`/api/v2/agents${scope}`).then((payload) => {
     const rows = Array.isArray(payload)
       ? payload
       : (asRecord(payload)?.items as unknown[] | undefined) || [];
@@ -764,6 +765,23 @@ function normalizeMessage(value: unknown, index: number): ChatMessage | null {
   };
 }
 
+/** Human-only write; the server must never route this request to an AI executor. */
+export function postHumanMessage(threadId: string, content: string): Promise<{
+  id: string;
+  thread_id: string;
+  author_type: "user";
+  author_id: string;
+  content: string;
+  created_at: string;
+  mode: "human";
+  ai_invoked: false;
+}> {
+  return apiJson(`/api/v2/threads/${encodeURIComponent(threadId)}/human-messages`, {
+    method: "POST",
+    body: JSON.stringify({ content }),
+  });
+}
+
 export function listMessages(threadId: string): Promise<ChatMessage[]> {
   return apiJson<unknown>(
     `/api/v2/threads/${encodeURIComponent(threadId)}/messages`,
@@ -775,6 +793,66 @@ export function listMessages(threadId: string): Promise<ChatMessage[]> {
       .map(normalizeMessage)
       .filter((message): message is ChatMessage => Boolean(message));
   });
+}
+
+export type ThreadGrant = {
+  history_access: "from_join" | "full_thread";
+  allowed_agent_ids: string[];
+  can_upload_files: boolean;
+  can_read_messages: boolean;
+  can_write_messages: boolean;
+  can_view_attachments: boolean;
+  can_download_artifacts: boolean;
+  can_generate_artifacts: boolean;
+};
+
+export type ThreadPermissions = ThreadGrant & {
+  role: string;
+  access_expires_at?: string | null;
+};
+
+export type ThreadParticipant = ThreadGrant & {
+  id: string;
+  user_id: string;
+  role: string;
+  membership_type: string;
+  email?: string;
+  display_name?: string;
+  access_expires_at?: string | null;
+  access_expired?: boolean;
+};
+
+export function getThreadPermissions(threadId: string): Promise<ThreadPermissions> {
+  return apiJson(`/api/v2/threads/${encodeURIComponent(threadId)}/my-permissions`);
+}
+
+export function listThreadParticipants(threadId: string): Promise<ThreadParticipant[]> {
+  return apiJson(`/api/v2/threads/${encodeURIComponent(threadId)}/participants`);
+}
+
+export function updateThreadParticipantPermissions(
+  threadId: string, userId: string, grant: ThreadGrant,
+): Promise<{ status: string; user_id: string }> {
+  return apiJson(
+    `/api/v2/threads/${encodeURIComponent(threadId)}/participants/${encodeURIComponent(userId)}/permissions`,
+    { method: "PUT", body: JSON.stringify(grant) },
+  );
+}
+
+export function updateThreadParticipantAccess(
+  threadId: string, userId: string, durationHours: number | null,
+): Promise<{ status: string; user_id: string; access_expires_at: string | null }> {
+  return apiJson(
+    `/api/v2/threads/${encodeURIComponent(threadId)}/participants/${encodeURIComponent(userId)}/access`,
+    { method: "PATCH", body: JSON.stringify({ duration_hours: durationHours }) },
+  );
+}
+
+export function revokeThreadParticipant(threadId: string, userId: string) {
+  return apiJson<{ status: string; user_id: string }>(
+    `/api/v2/threads/${encodeURIComponent(threadId)}/participants/${encodeURIComponent(userId)}`,
+    { method: "DELETE" },
+  );
 }
 
 export function createInvite(threadId: string, payload: object) {

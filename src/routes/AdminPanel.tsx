@@ -816,6 +816,11 @@ export default function AdminPanel() {
               </div>
               <small>Convites de plataforma são independentes dos convites de conversa.</small>
             </div>
+            <p className="admin-governance-note">
+              Para configurar histórico, agentes e anexos de cada colaborador, abra a conversa
+              e selecione <strong>Pessoas e vínculos</strong>.
+              {" "}<Link to="/app">Abrir conversas</Link>
+            </p>
 
             <div className="admin-agent-grid">
               <article className="admin-agent-card">

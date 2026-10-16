@@ -2614,3 +2614,22 @@ button.header-cta {
     white-space: nowrap;
   }
 }
+
+/* DG-01 — thread-scoped collaborator permissions panel */
+.people-panel { width: min(620px, 100%); }
+.people-panel__heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.people-panel__heading h2, .people-panel__heading h3 { margin: 0; }
+.people-panel__heading p { color: var(--muted); margin: 8px 0; }
+.people-panel__section { display: grid; gap: 13px; padding: 18px 0; border-top: 1px solid #34516b; }
+.people-panel__section > h3 { margin: 0; }
+.people-panel select { width: 100%; min-height: 45px; padding: 10px; border: 1px solid #34516b; border-radius: 10px; background: #09131c; color: white; }
+.people-panel__toggle { display: flex !important; flex-direction: row; align-items: center; gap: 10px; }
+.people-panel__toggle input { width: 18px; min-height: 18px; flex: 0 0 18px; }
+.people-panel__hint { color: var(--muted); font-size: 0.85rem; margin: 0; }
+.people-panel__invite-link output { margin-top: 6px; font-size: 0.85rem; }
+.people-panel__invite-link small { display: block; color: var(--muted); margin-top: 6px; }
+.people-panel__person { border: 1px solid #34516b; border-radius: 12px; padding: 12px; background: #0c1722; }
+.people-panel__person summary { display: flex; justify-content: space-between; gap: 12px; cursor: pointer; overflow-wrap: anywhere; }
+.people-panel__person summary span { color: var(--muted); font-size: .85rem; }
+.people-panel__fields { display: grid; gap: 12px; padding-top: 16px; }
+.people-panel__person-actions { display: flex; flex-wrap: wrap; gap: 8px; }
